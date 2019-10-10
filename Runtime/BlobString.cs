@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Unity.IL2CPP.CompilerServices;
 using UnityEngine;
 
 namespace BlobHandles
@@ -95,12 +97,19 @@ namespace BlobHandles
         
         public BlobString(byte* pointer, int byteLength)
         {
-            var alignedByteLength = (byteLength + 3) & ~3;
-            var intChunksLength = alignedByteLength / 4;
             Bytes = null;
             ByteCount = byteLength;
-            HashBase = intChunksLength;
+            HashBase = ((byteLength + 3) & ~3) / 4;
             Ptr = (int*) pointer;
+            OriginalPtr = Ptr;
+        }
+        
+        public BlobString(int* pointer, int byteLength)
+        {
+            Bytes = null;
+            ByteCount = byteLength;
+            HashBase = ((byteLength + 3) & ~3) / 4;
+            Ptr = pointer;
             OriginalPtr = Ptr;
         }
 
@@ -127,6 +136,9 @@ namespace BlobHandles
             Buffer.BlockCopy(bytes, offset, Bytes, 0, byteLength);
         }
 
+        [Il2CppSetOption(Option.NullChecks, false)]
+        [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
+        [Il2CppSetOption(Option.DivideByZeroChecks, false)]
         public void SetBytesUnchecked(byte[] bytes, int offset, int byteLength)
         {
             // clear trailing bytes
@@ -137,15 +149,17 @@ namespace BlobHandles
             Buffer.BlockCopy(bytes, offset, Bytes, 0, byteLength);
         }
         
-        public void SetBytesMemCpy(byte* bytes, int byteLength)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Il2CppSetOption(Option.NullChecks, false)]
+        [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
+        [Il2CppSetOption(Option.DivideByZeroChecks, false)]
+        public void SetPointer(byte* bytes, int byteLength)
         {
             // if we have more trailing bytes after setting, that means we'd be left with junk.
             // since trailing bytes are always in the last int, just set it to 0 to clear that part before we copy.
-            if (ByteCount < byteLength)
-                Bytes[Bytes.Length - 1] = 0;  
-            
+            HashBase = ((byteLength + 3) & ~3) / 4;
             ByteCount = byteLength;
-            MemoryCopy(Ptr, bytes, (UIntPtr) byteLength);
+            Ptr = (int*) bytes;
         }
         
         public void Dispose()
@@ -159,11 +173,18 @@ namespace BlobHandles
             Ptr = OriginalPtr;
         }
 
+        [Il2CppSetOption(Option.NullChecks, false)]
+        [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            // HashBase is set to the number of 4-byte chunks in the Bytes array by default.
-            // This is because this was shown to give significantly faster dictionary key lookup.
-            unchecked { return HashBase ^ 397 + *(Ptr + HashBase - 1); }
+            unchecked
+            {
+                // there may be non-zero values beyond the ending byte & we're reading as an int*,
+                // so we need to ignore the last 3 bytes
+                var lastValueByte = *(Ptr + HashBase - 1) & 0x00FFFFFF;
+                return HashBase ^ 397 + lastValueByte;
+            }
         }
         
         /// <summary>
@@ -179,10 +200,9 @@ namespace BlobHandles
         // comparing bytes using memcmp has shown to be several times faster than any other method i've found
         [DllImport("msvcrt.dll", EntryPoint = "memcmp")]
         static extern int MemoryCompare(void* ptr1, void* ptr2, UIntPtr count);
-        
-        [DllImport("msvcrt.dll", EntryPoint = "memcpy", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
-        static extern IntPtr MemoryCopy(void* dest, void* src, UIntPtr count);
 
+        [Il2CppSetOption(Option.NullChecks, false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobString other)
         {
             if (other.ByteCount != ByteCount) return false;
@@ -196,7 +216,8 @@ namespace BlobHandles
 
         public static bool operator ==(BlobString l, BlobString r)
         {
-            return l.ByteCount == r.ByteCount && MemoryCompare(l.Ptr, r.Ptr, (UIntPtr) r.ByteCount) == 0;
+            var countAsUintPtr = (UIntPtr) r.ByteCount;
+            return l.ByteCount == r.ByteCount && MemoryCompare(l.Ptr, r.Ptr, countAsUintPtr) == 0;
         }
 
         public static bool operator !=(BlobString l, BlobString r)
@@ -207,6 +228,8 @@ namespace BlobHandles
         // fallback for equality checks if we can't use memcmp
         bool FallbackEquals(BlobString other)
         {
+            if (other.ByteCount != ByteCount) return false;
+            
             if (Bytes.Length % 2 == 0)
             {
                 fixed (int* otherPtr = other.Bytes)
@@ -223,6 +246,26 @@ namespace BlobHandles
             }
 
             return true;
+        }
+
+        // this is for debugging
+        public int FirstByteDifferenceIndex(BlobString other)
+        {
+            if (other.ByteCount != ByteCount) return -1;
+
+            var selfBytePtr = (byte*) Ptr;
+            var otherBytePtr = (byte*) other.Ptr;
+            
+            for (int i = 0; i < ByteCount; i++)
+            {
+                var selfByte = *(selfBytePtr + i);
+                var otherByte = *(otherBytePtr + i);
+                
+                if (selfByte != otherByte)
+                    return i;
+            }
+
+            return -1;
         }
 
     }

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.IL2CPP.CompilerServices;
 
 namespace BlobHandles
 {
-    public unsafe class BlobStringLookup<T> : IDisposable
+    public sealed unsafe class BlobStringLookup<T> : IDisposable
     {
         const int defaultSize = 16;
         
@@ -65,15 +67,11 @@ namespace BlobHandles
             }
         }
         
+        [Il2CppSetOption(Option.NullChecks, false)]
         public bool TryGetValueFromBytes(byte* ptr, int byteCount, out T value)
         {
-            if (byteCount > m_MaxByteLengthOfAdded)
-            {
-                value = default;
-                return false;
-            }
-
             var tempKey = new BlobString(ptr, byteCount);
+            return Dictionary.TryGetValue(tempKey, out value);
             /*
             // override the pointer & count, which causes Equals() to compare against the new data
             m_KeyBuffer.Ptr = (int*)ptr;
@@ -81,9 +79,48 @@ namespace BlobHandles
             // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
             // this performs better as a hashcode than using ByteCount
             m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
+            return Dictionary.TryGetValue(m_KeyBuffer, out value);
             */
-            
+        }
+        
+        [Il2CppSetOption(Option.NullChecks, false)]
+        public bool TryGetValueFromBytes(int* ptr, int byteCount, out T value)
+        {
+            var tempKey = new BlobString(ptr, byteCount);
             return Dictionary.TryGetValue(tempKey, out value);
+            /*
+            // override the pointer & count, which causes Equals() to compare against the new data
+            m_KeyBuffer.Ptr = ptr;
+            m_KeyBuffer.ByteCount = byteCount;
+            // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
+            // this performs better as a hashcode than using ByteCount
+            m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
+            return Dictionary.TryGetValue(m_KeyBuffer, out value);
+            */
+        }
+
+        [Il2CppSetOption(Option.NullChecks, false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetPointerWrapper(byte* ptr, int byteCount)
+        {
+            // override the pointer & count, which causes Equals() to compare against the new data
+            m_KeyBuffer.Ptr = (int*)ptr;
+            m_KeyBuffer.ByteCount = byteCount;
+            // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
+            // this performs better as a hashcode than using ByteCount
+            m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
+        }
+        
+        [Il2CppSetOption(Option.NullChecks, false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetPointerWrapper(int* ptr, int byteCount)
+        {
+            // override the pointer & count, which causes Equals() to compare against the new data
+            m_KeyBuffer.Ptr = ptr;
+            m_KeyBuffer.ByteCount = byteCount;
+            // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
+            // this performs better as a hashcode than using ByteCount
+            m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
         }
 
         public void Clear()
