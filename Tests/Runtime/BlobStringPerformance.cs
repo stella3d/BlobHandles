@@ -10,7 +10,6 @@ namespace BlobHandles.Tests
 {
     public class PerformanceTests
     {
-        /*
         public int StringCount = 1001;
         
         public int MinLength = 20;
@@ -230,6 +229,5 @@ namespace BlobHandles.Tests
             foreach (var t in intStrings)
                 t.Dispose();
         }
-        */
     }
 }

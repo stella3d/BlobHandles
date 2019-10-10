@@ -1,0 +1,20 @@
+{
+    "name": "BlobString.Tests.Editor",
+    "references": [
+        "GUID:19c41e5ceaa0e4b4daca3d6a88d9235d",
+        "GUID:1cebcd6621d92d34ebcfc65608a48577"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}

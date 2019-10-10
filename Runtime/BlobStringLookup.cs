@@ -64,18 +64,6 @@ namespace BlobHandles
                 m_KeyBuffer = new BlobString(alignedByteCount / 4);
             }
         }
-
-        public bool TryGetValueFromCopiedBytes(byte* ptr, int byteCount, out T value)
-        {
-            if (byteCount > m_MaxByteLengthOfAdded)
-            {
-                value = default;
-                return false;
-            }
-            
-            m_KeyBuffer.SetBytesMemCpy(ptr, byteCount);
-            return Dictionary.TryGetValue(m_KeyBuffer, out value);
-        }
         
         public bool TryGetValueFromBytes(byte* ptr, int byteCount, out T value)
         {
@@ -85,14 +73,17 @@ namespace BlobHandles
                 return false;
             }
 
+            var tempKey = new BlobString(ptr, byteCount);
+            /*
             // override the pointer & count, which causes Equals() to compare against the new data
             m_KeyBuffer.Ptr = (int*)ptr;
             m_KeyBuffer.ByteCount = byteCount;
             // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
             // this performs better as a hashcode than using ByteCount
             m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
+            */
             
-            return Dictionary.TryGetValue(m_KeyBuffer, out value);
+            return Dictionary.TryGetValue(tempKey, out value);
         }
 
         public void Clear()
