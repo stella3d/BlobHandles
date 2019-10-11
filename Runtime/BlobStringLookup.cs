@@ -86,17 +86,18 @@ namespace BlobHandles
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool TryGetValueFromBytes(int* ptr, int byteCount, out T value)
         {
+            /*
             var tempKey = new BlobString(ptr, byteCount);
             return Dictionary.TryGetValue(tempKey, out value);
-            /*
+            */
             // override the pointer & count, which causes Equals() to compare against the new data
-            m_KeyBuffer.Ptr = ptr;
-            m_KeyBuffer.ByteCount = byteCount;
+            var kb = m_KeyBuffer;
+            kb.Ptr = ptr;
+            kb.ByteCount = byteCount;
             // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
             // this performs better as a hashcode than using ByteCount
-            m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
-            return Dictionary.TryGetValue(m_KeyBuffer, out value);
-            */
+            kb.HashBase = ((byteCount + 3) & ~3) / 4;
+            return Dictionary.TryGetValue(kb, out value);
         }
 
         [Il2CppSetOption(Option.NullChecks, false)]

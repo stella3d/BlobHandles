@@ -2,12 +2,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using BlobHandles.Tests;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
+using Random = UnityEngine.Random;
 
 namespace BlobHandles
 {
@@ -17,7 +15,7 @@ namespace BlobHandles
 
         int m_StartFrame;
 
-        string logFile = "perflog.txt";
+        string logFile = "PerformanceTestLog.txt";
 
         public void Start()
         {
@@ -52,7 +50,7 @@ namespace BlobHandles
                     m_Tests.IntStringLookup_SetPointerWrapper();
                     break;
                 case 140:
-                    m_Tests.ManagedString_GetBytes();
+                    m_Tests.GetAsciiStringFromBytes();
                     break;
                 case 145:
                     m_Tests.AfterAll();
@@ -76,8 +74,6 @@ namespace BlobHandles.Tests
         
         string[] m_Strings;
 
-        GCHandle[] m_GcHandles;
-        
         const string newlineChar = "\n";
         readonly byte[] m_NewLineBytes = Encoding.UTF8.GetBytes(newlineChar);
 
@@ -90,7 +86,27 @@ namespace BlobHandles.Tests
             // init state to make sure that we always get the same test results
             Random.InitState(303);
             m_Strings = RandomStringsWithPrefix("/composition", StringCount, MinLength, MaxLength);
-            m_File = new FileStream(RuntimeLog, FileMode.Create);
+            m_File = new FileStream(RuntimeLog, FileMode.OpenOrCreate);
+            WriteEnvironmentInfo();
+        }
+
+        // write out automatic compiler & environment info
+        void WriteEnvironmentInfo()
+        {
+            m_File.Write(m_NewLineBytes, 0, 0);
+            var versionBytes = Encoding.ASCII.GetBytes(Application.unityVersion);
+            m_File.Write(versionBytes, 0, 0);
+#if UNITY_EDITOR
+            var editorBytes = Encoding.ASCII.GetBytes("Editor,");
+            m_File.Write(editorBytes, 0, 0);
+#endif
+#if ENABLE_IL2CPP
+            var runtimeBytes = Encoding.ASCII.GetBytes("IL2CPP");
+#else
+            var runtimeBytes = Encoding.ASCII.GetBytes(" Mono");
+#endif
+            m_File.Write(runtimeBytes, 0, 0);
+            m_File.Write(m_NewLineBytes, 0, 0);
         }
 
         public void AfterAll()
@@ -103,18 +119,6 @@ namespace BlobHandles.Tests
             var bytes = Encoding.UTF8.GetBytes(text);
             m_File.Write(bytes, 0, bytes.Length);
             m_File.Write(m_NewLineBytes, 0, m_NewLineBytes.Length);
-        }
-
-        public void AfterEach()
-        {
-            if (m_GcHandles != null)
-            {
-                foreach (var handle in m_GcHandles)
-                {
-                    if(handle.IsAllocated)
-                        handle.Free();
-                }
-            }
         }
 
         public void StringEquals_ManagedIntString()
@@ -270,18 +274,37 @@ namespace BlobHandles.Tests
                 t.Dispose();
         }
         
-        public unsafe void ManagedString_GetBytes()
+        public unsafe void GetAsciiStringFromBytes()
         {
+            var jitAsciiStr = Encoding.ASCII.GetString(new byte[0]);
+            var jitUtf8Str = Encoding.UTF8.GetString(new byte[0]);
             var bytes = new byte[m_Strings.Length][];
             for (int i = 0; i < m_Strings.Length; i++)
             {
-                var str = m_Strings[i];
+                bytes[i] = Encoding.ASCII.GetBytes(m_Strings[i]);
+            }
+            
+            k_Stopwatch.Restart();
+            for (int i = 0; i < m_Strings.Length; i++)
+            {
+                var b = bytes[i];
                 k_Stopwatch.Start();
-                bytes[i] = Encoding.ASCII.GetBytes(str);
+                var str = Encoding.ASCII.GetString(b);
                 k_Stopwatch.Stop();
             }
             
-            WriteLog($"count {m_Strings.Length}, encoding.ascii.getBytes(), {k_Stopwatch.ElapsedTicks}");
+            WriteLog($"Encoding.ASCII.GetString(bytes), {k_Stopwatch.ElapsedTicks}");
+            
+            k_Stopwatch.Restart();
+            for (int i = 0; i < m_Strings.Length; i++)
+            {
+                var b = bytes[i];
+                k_Stopwatch.Start();
+                var str = Encoding.UTF8.GetString(b);
+                k_Stopwatch.Stop();
+            }
+            
+            WriteLog($"Encoding.UTF8.GetString(bytes), {k_Stopwatch.ElapsedTicks}");
         }
         
         public unsafe void IntStringLookup_TryGetValueFromBytes()
