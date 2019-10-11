@@ -301,7 +301,7 @@ namespace BlobHandles.Tests
                 bytes[i] = b;
             }
             
-            var lookup = new BlobStringLookup<int>();
+            var lookup = new BlobStringDictionary<int>();
             for (int i = 0; i < intStrings.Length; i++)
                 lookup.Add(intStrings[i], i);
 

@@ -1,6 +1,8 @@
 {
-    "name": "BlobString.Runtime",
-    "references": [],
+    "name": "BlobHandles.Tests.Runtime",
+    "references": [
+        "GUID:19c41e5ceaa0e4b4daca3d6a88d9235d"
+    ],
     "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor",
@@ -12,7 +14,7 @@
     "allowUnsafeCode": true,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": true,
+    "autoReferenced": false,
     "defineConstraints": [],
     "versionDefines": []
 }
