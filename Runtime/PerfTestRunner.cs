@@ -47,12 +47,9 @@ namespace BlobHandles
                     m_Tests.IntStringLookup_TryGetValueFromBytes();
                     break;
                 case 120:
-                    m_Tests.IntStringLookup_SetPointerWrapper();
-                    break;
-                case 140:
                     m_Tests.GetAsciiStringFromBytes();
                     break;
-                case 145:
+                case 125:
                     m_Tests.AfterAll();
                     enabled = false;
                     break;
@@ -362,67 +359,6 @@ namespace BlobHandles.Tests
             }
             
             WriteLog($"TryGetValueFromBytes(int* ) ticks: {k_Stopwatch.ElapsedTicks}");
-            
-            foreach (var t in intStrings)
-                t.Dispose();
-        }
-        
-        public unsafe void IntStringLookup_SetPointerWrapper()
-        {
-            var intStrings = new BlobString[m_Strings.Length];
-            var bytes = new byte[m_Strings.Length][];
-            for (int i = 0; i < m_Strings.Length; i++)
-            {
-                var str = m_Strings[i];
-                intStrings[i] = new BlobString(str);
-                var b = Encoding.ASCII.GetBytes(str);
-                bytes[i] = b;
-            }
-            
-            var lookup = new BlobStringLookup<int>();
-            for (int i = 0; i < intStrings.Length; i++)
-                lookup.Add(intStrings[i], i);
-
-            // force jit compilation
-            fixed (byte* dummyPtr = bytes[0])
-            {
-                lookup.SetPointerWrapper(dummyPtr, bytes[0].Length);
-                var iPtr = (int*) dummyPtr;
-                lookup.SetPointerWrapper(iPtr, bytes[0].Length);
-            }
-            
-            k_Stopwatch.Reset();
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var byteStr = bytes[i];
-                fixed (byte* byteStrPtr = byteStr)
-                {
-                    k_Stopwatch.Start();
-
-                    lookup.SetPointerWrapper(byteStrPtr, byteStr.Length);
-
-                    k_Stopwatch.Stop();
-                }
-            }
-
-            WriteLog($"count {m_Strings.Length}, lookup.SetPointerWrapper() time in ticks, {k_Stopwatch.ElapsedTicks}");
-            
-            k_Stopwatch.Reset();
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var byteStr = bytes[i];
-                fixed (byte* byteStrPtr = byteStr)
-                {
-                    var iPtr = (int*) byteStrPtr;
-                    k_Stopwatch.Start();
-
-                    lookup.SetPointerWrapper(iPtr, byteStr.Length);
-
-                    k_Stopwatch.Stop();
-                }
-            }
-            
-            WriteLog($"count {m_Strings.Length}, lookup.SetIntPointerWrapper() time in ticks, {k_Stopwatch.ElapsedTicks}");
             
             foreach (var t in intStrings)
                 t.Dispose();

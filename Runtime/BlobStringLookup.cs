@@ -70,27 +70,20 @@ namespace BlobHandles
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool TryGetValueFromBytes(byte* ptr, int byteCount, out T value)
         {
-            var tempKey = new BlobString(ptr, byteCount);
-            return Dictionary.TryGetValue(tempKey, out value);
-            /*
-            // override the pointer & count, which causes Equals() to compare against the new data
-            m_KeyBuffer.Ptr = (int*)ptr;
-            m_KeyBuffer.ByteCount = byteCount;
+            var kb = m_KeyBuffer;
+            // override the pointer & count, which causes all operating to work against the new data
+            kb.Ptr = (int*) ptr;
+            kb.ByteCount = byteCount;
             // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
             // this performs better as a hashcode than using ByteCount
-            m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
-            return Dictionary.TryGetValue(m_KeyBuffer, out value);
-            */
+            kb.HashBase = ((byteCount + 3) & ~3) / 4;
+            return Dictionary.TryGetValue(kb, out value);
         }
         
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool TryGetValueFromBytes(int* ptr, int byteCount, out T value)
         {
-            /*
-            var tempKey = new BlobString(ptr, byteCount);
-            return Dictionary.TryGetValue(tempKey, out value);
-            */
-            // override the pointer & count, which causes Equals() to compare against the new data
+            // override the pointer & count, which causes all operating to work against the new data
             var kb = m_KeyBuffer;
             kb.Ptr = ptr;
             kb.ByteCount = byteCount;
@@ -98,30 +91,6 @@ namespace BlobHandles
             // this performs better as a hashcode than using ByteCount
             kb.HashBase = ((byteCount + 3) & ~3) / 4;
             return Dictionary.TryGetValue(kb, out value);
-        }
-
-        [Il2CppSetOption(Option.NullChecks, false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetPointerWrapper(byte* ptr, int byteCount)
-        {
-            // override the pointer & count, which causes Equals() to compare against the new data
-            m_KeyBuffer.Ptr = (int*)ptr;
-            m_KeyBuffer.ByteCount = byteCount;
-            // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
-            // this performs better as a hashcode than using ByteCount
-            m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
-        }
-        
-        [Il2CppSetOption(Option.NullChecks, false)]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void SetPointerWrapper(int* ptr, int byteCount)
-        {
-            // override the pointer & count, which causes Equals() to compare against the new data
-            m_KeyBuffer.Ptr = ptr;
-            m_KeyBuffer.ByteCount = byteCount;
-            // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
-            // this performs better as a hashcode than using ByteCount
-            m_KeyBuffer.HashBase = ((byteCount + 3) & ~3) / 4;
         }
 
         public void Clear()

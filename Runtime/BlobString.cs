@@ -7,6 +7,8 @@ using UnityEngine;
 
 namespace BlobHandles
 {
+
+
     /// <summary>
     /// Store a string as a series of 32-bit integers.
     /// Essentially, a trick to allow using chunks of bytes as fast dictionary keys in place of strings
@@ -22,8 +24,8 @@ namespace BlobHandles
         public static Encoding Encoding { get; private set; } = Encoding.ASCII;
         
         internal readonly int[] Bytes;
-        internal int ByteCount;
-        internal int HashBase;
+        public int ByteCount;
+        public int HashBase;
 
         GCHandle m_BytesHandle;
         
@@ -31,6 +33,8 @@ namespace BlobHandles
         public readonly int* OriginalPtr;
         /// <summary>The active pointer used for all operations</summary>
         internal int* Ptr;
+
+        //public BlobHandle Handle;
         
         public BlobString(string source)
         {
@@ -173,8 +177,6 @@ namespace BlobHandles
             Ptr = OriginalPtr;
         }
 
-        [Il2CppSetOption(Option.NullChecks, false)]
-        [Il2CppSetOption(Option.ArrayBoundsChecks, false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
