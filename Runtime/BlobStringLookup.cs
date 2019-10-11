@@ -8,100 +8,85 @@ namespace BlobHandles
     {
         const int defaultSize = 16;
         
-        public readonly Dictionary<BlobString, T> Dictionary;
-        readonly Dictionary<string, IntPtr> SourceMapping;
+        readonly Dictionary<BlobHandle, T> Dictionary;
 
-        int m_MaxByteLengthOfAdded;
-        BlobString m_KeyBuffer;
-        
+        readonly Dictionary<string, BlobString> SourceMap;
+
         public BlobStringLookup(int initialCapacity = defaultSize)
         {
-            Dictionary = new Dictionary<BlobString, T>(initialCapacity);
-            SourceMapping = new Dictionary<string, IntPtr>(initialCapacity);
-            m_KeyBuffer = new BlobString();
+            Dictionary = new Dictionary<BlobHandle, T>(initialCapacity);
+            SourceMap = new Dictionary<string, BlobString>(initialCapacity);
         }
         
+        /// <summary>Convert a managed string into a BlobString and add it to the lookup</summary>
+        /// <param name="str">The string to add</param>
+        /// <param name="value">The value to associate with the key</param>
+        [Il2CppSetOption(Option.NullChecks, false)]
         public void Add(string str, T value)
         {
-            if (SourceMapping.ContainsKey(str)) return;
-
-            var iStr = new BlobString(str);
-            Add(iStr, value);
-            SourceMapping.Add(str, new IntPtr(iStr.OriginalPtr));
+            if (SourceMap.ContainsKey(str)) 
+                return;
+            
+            var blobStr = new BlobString(str);
+            Dictionary.Add(blobStr.Handle, value);
+            SourceMap.Add(str, blobStr);
         }
         
-        public void Remove(string str)
+        /// <summary>Add an already-created BlobString to the lookup</summary>
+        /// <param name="blobStr">The blob string to add</param>
+        /// <param name="value">The value to associate with the key</param>
+        [Il2CppSetOption(Option.NullChecks, false)]
+        public void Add(BlobString blobStr, T value)
         {
-            if (!SourceMapping.TryGetValue(str, out var byteIntPtr)) return;
+            Dictionary.Add(blobStr.Handle, value);
+        }
+        
+        /// <summary>Remove a string from the lookup</summary>
+        /// <param name="str">The string to remove</param>
+        /// <returns>true if the string was found and removed, false otherwise</returns>
+        public bool Remove(string str)
+        {
+            if (!SourceMap.TryGetValue(str, out var blobStr)) 
+                return false;
 
-            var searchStrPtr = (int*) byteIntPtr;
-            BlobString toRemove = default;
-            foreach (var intStr in Dictionary.Keys)
-            {
-                if (intStr.OriginalPtr == searchStrPtr)
-                {
-                    toRemove = intStr;
-                    break;
-                }
-            }
-
-            SourceMapping.Remove(str);
-            if (toRemove != default)
-            {
-                Dictionary.Remove(toRemove);
-                toRemove.Dispose();
-            }
+            SourceMap.Remove(str);
+            var removed = Dictionary.Remove(blobStr.Handle);
+            blobStr.Dispose();
+            return removed;
         }
 
-        public void Add(BlobString intStr, T value)
+        /// <summary>Remove a blob string from the lookup</summary>
+        /// <param name="blobStr">The blob string to remove</param>
+        /// <returns>true if the string was found and removed, false otherwise</returns>
+        public bool Remove(BlobString blobStr)
         {
-            Dictionary.Add(intStr, value);
-            
-            if (m_MaxByteLengthOfAdded < intStr.ByteCount)
-            {
-                m_MaxByteLengthOfAdded = intStr.ByteCount;
-                m_KeyBuffer.Dispose();
-                var alignedByteCount = (intStr.ByteCount + 3) & ~3;
-                m_KeyBuffer = new BlobString(alignedByteCount / 4);
-            }
+            return Dictionary.Remove(blobStr.Handle);
         }
         
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool TryGetValueFromBytes(byte* ptr, int byteCount, out T value)
         {
-            var kb = m_KeyBuffer;
-            // override the pointer & count, which causes all operating to work against the new data
-            kb.Ptr = (int*) ptr;
-            kb.ByteCount = byteCount;
-            // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
-            // this performs better as a hashcode than using ByteCount
-            kb.HashBase = ((byteCount + 3) & ~3) / 4;
-            return Dictionary.TryGetValue(kb, out value);
+            var tempHandle = new BlobHandle(ptr, byteCount);
+            return Dictionary.TryGetValue(tempHandle, out value);
         }
         
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool TryGetValueFromBytes(int* ptr, int byteCount, out T value)
         {
-            // override the pointer & count, which causes all operating to work against the new data
-            var kb = m_KeyBuffer;
-            kb.Ptr = ptr;
-            kb.ByteCount = byteCount;
-            // set the hashcode base to the number of 32-bit integers needed to contain the bytes.
-            // this performs better as a hashcode than using ByteCount
-            kb.HashBase = ((byteCount + 3) & ~3) / 4;
-            return Dictionary.TryGetValue(kb, out value);
+            var tempHandle = new BlobHandle(ptr, byteCount);
+            return Dictionary.TryGetValue(tempHandle, out value);
         }
 
         public void Clear()
         {
             Dictionary.Clear();
-            SourceMapping.Clear();
+            SourceMap.Clear();
         }
 
         public void Dispose()
         {
-            foreach (var kvp in Dictionary)
-                kvp.Key.Dispose();
+            foreach (var kvp in SourceMap)
+                kvp.Value.Dispose();
         }
     }
 }

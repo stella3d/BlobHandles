@@ -38,9 +38,6 @@ namespace BlobHandles
                 case 80:
                     m_Tests.DictionaryExtension_TryGetValueFromBytes();
                     break;
-                case 90:
-                    m_Tests.ManagedIntString_SetFromBytes();
-                    break;
                 case 100:
                     m_Tests.IntStringLookup_TryGetValueFromBytes();
                     break;

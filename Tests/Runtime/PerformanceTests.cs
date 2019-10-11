@@ -256,45 +256,6 @@ namespace BlobHandles.Tests
             WriteLog($"{m_Strings.Length} count, Dictionary.TryGetValueFromBytes() w/ BlobHandle<byte*> {bTicks}");
         }
         
-        public unsafe void ManagedIntString_SetFromBytes()
-        {
-            var intStrings = new BlobString[m_Strings.Length];
-            var bytes = new byte[m_Strings.Length][];
-            for (int i = 0; i < m_Strings.Length; i++)
-            {
-                var str = m_Strings[i];
-                intStrings[i] = new BlobString(str);
-                bytes[i] = Encoding.ASCII.GetBytes(str);
-            }
-
-            k_Stopwatch.Reset();
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var byteStr = bytes[i];
-                var intStr = intStrings[i];
-                k_Stopwatch.Start();
-                intStr.SetBytes(byteStr, 0, byteStr.Length);
-                k_Stopwatch.Stop();
-            }
-
-            var checkedTicks = k_Stopwatch.ElapsedTicks;
-            k_Stopwatch.Reset();
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var byteStr = bytes[i];
-                var intStr = intStrings[i];
-                k_Stopwatch.Start();
-                intStr.SetBytesUnchecked(byteStr, 0, byteStr.Length);
-                k_Stopwatch.Stop();
-            }
-
-            var unCheckedTicks = k_Stopwatch.ElapsedTicks;
-            
-            WriteLog($"count {m_Strings.Length}, SetBytes(), checked {checkedTicks}, unchecked {unCheckedTicks}");
-            foreach (var t in intStrings)
-                t.Dispose();
-        }
-        
         public unsafe void GetAsciiStringFromBytes()
         {
             var jitAsciiStr = Encoding.ASCII.GetString(new byte[0]);
