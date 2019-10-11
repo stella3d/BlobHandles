@@ -1,15 +1,16 @@
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.IO;
+using System.Linq;
 using System.Text;
-using NUnit.Framework;
-using Debug = UnityEngine.Debug;
+using BlobHandles.Tests;
+using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace BlobHandles.Tests
 {
     public class PerformanceTests
     {
-        /*
         static readonly Stopwatch k_Stopwatch = new Stopwatch();
         
         public int StringCount = 1001;
@@ -19,30 +20,53 @@ namespace BlobHandles.Tests
         
         string[] m_Strings;
 
-        GCHandle[] m_GcHandles;
+        const string newlineChar = "\n";
+        readonly byte[] m_NewLineBytes = Encoding.UTF8.GetBytes(newlineChar);
 
-        [OneTimeSetUp]
+        public string RuntimeLog { get; set; }
+
+        FileStream m_File;
+
         public void BeforeAll()
         {
             // init state to make sure that we always get the same test results
-            UnityEngine.Random.InitState(303);
+            Random.InitState(303);
             m_Strings = TestData.RandomStringsWithPrefix("/composition", StringCount, MinLength, MaxLength);
+            m_File = new FileStream(RuntimeLog, FileMode.OpenOrCreate);
+            WriteEnvironmentInfo();
         }
 
-        [TearDown]
-        public void AfterEach()
+        // write out automatic compiler & environment info
+        void WriteEnvironmentInfo()
         {
-            if (m_GcHandles != null)
-            {
-                foreach (var handle in m_GcHandles)
-                {
-                    if(handle.IsAllocated)
-                        handle.Free();
-                }
-            }
+            m_File.Write(m_NewLineBytes, 0, 0);
+            var versionBytes = Encoding.ASCII.GetBytes(Application.unityVersion);
+            m_File.Write(versionBytes, 0, 0);
+#if UNITY_EDITOR
+            var editorBytes = Encoding.ASCII.GetBytes("Editor,");
+            m_File.Write(editorBytes, 0, 0);
+#endif
+#if ENABLE_IL2CPP
+            var runtimeBytes = Encoding.ASCII.GetBytes("IL2CPP");
+#else
+            var runtimeBytes = Encoding.ASCII.GetBytes(" Mono");
+#endif
+            m_File.Write(runtimeBytes, 0, 0);
+            m_File.Write(m_NewLineBytes, 0, 0);
         }
 
-        [Test]
+        public void AfterAll()
+        {
+            m_File.Close();
+        }
+        
+        void WriteLog(string text)
+        {
+            var bytes = Encoding.UTF8.GetBytes(text);
+            m_File.Write(bytes, 0, bytes.Length);
+            m_File.Write(m_NewLineBytes, 0, m_NewLineBytes.Length);
+        }
+
         public void StringEquals_ManagedIntString()
         {
             var searchForIndex = StringCount / 4;
@@ -76,12 +100,11 @@ namespace BlobHandles.Tests
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            Debug.Log($"elements {searchForIndex} Equals(), str {strTicks}, intString  {intStrTicks}");
+            WriteLog($"elements {searchForIndex} Equals(), str {strTicks}, intString  {intStrTicks}");
             foreach (var t in intStrings)
                 t.Dispose();
         }
         
-        [Test]
         public void GetHashCode_ManagedIntString()
         {
             var intStrings = new BlobString[m_Strings.Length];
@@ -111,13 +134,12 @@ namespace BlobHandles.Tests
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            Debug.Log($"elements {m_Strings.Length} GetHashCode(), str {strTicks}, intString {intStrTicks}");
+            WriteLog($"elements {m_Strings.Length} GetHashCode(), str {strTicks}, intString {intStrTicks}");
             
             foreach (var t in intStrings)
                 t.Dispose();
         }
         
-        [Test]
         public void DictionaryTryGetValue_ManagedIntString()
         {
             var intStrings = new BlobString[m_Strings.Length];
@@ -144,9 +166,7 @@ namespace BlobHandles.Tests
             }
             k_Stopwatch.Stop();
             var strTicks = k_Stopwatch.ElapsedTicks;
-            
 
-            
             k_Stopwatch.Restart();
             foreach (var intString in intStrings)
             {
@@ -155,13 +175,87 @@ namespace BlobHandles.Tests
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            Debug.Log($"elements {m_Strings.Length} Dictionary.TryGetValue, str {strTicks}, intString {intStrTicks}");
+            WriteLog($"elements {m_Strings.Length} Dictionary.TryGetValue, str {strTicks}, intString {intStrTicks}");
             
             foreach (var t in intStrings)
                 t.Dispose();
         }
         
-        [Test]
+        public unsafe void DictionaryTryGetValue_BlobHandles()
+        {
+            var bHandles = new BlobHandle[m_Strings.Length];
+            var bytes = new byte[m_Strings.Length][];
+            for (int i = 0; i < m_Strings.Length; i++)
+            {
+                var b = Encoding.ASCII.GetBytes(m_Strings[i]);
+                bytes[i] = b;
+
+                fixed (byte* bPtr = b)
+                {
+                    bHandles[i] = new BlobHandle(bPtr, b.Length);
+                }
+            }
+
+            var bDict = new Dictionary<BlobHandle, int>(m_Strings.Length);
+            for (var i = 0; i < m_Strings.Length; i++)
+            {
+                bDict.Add(bHandles[i], i);
+            }
+
+            // force jit compilation
+            bDict.TryGetValue(bHandles[0], out var bJitValue);
+            
+            k_Stopwatch.Restart();
+            foreach (var bh in bHandles)
+            {
+                k_Stopwatch.Start();
+                bDict.TryGetValue(bh, out var value);
+                k_Stopwatch.Stop();
+            }
+            var bTicks = k_Stopwatch.ElapsedTicks;
+
+            WriteLog($"{m_Strings.Length} count, Dictionary.TryGetValue() w/ BlobHandle key {bTicks}");
+        }
+        
+        public unsafe void DictionaryExtension_TryGetValueFromBytes()
+        {
+            var bHandles = new BlobHandle[m_Strings.Length];
+            var bytes = new byte[m_Strings.Length][];
+            for (int i = 0; i < m_Strings.Length; i++)
+            {
+                var b = Encoding.ASCII.GetBytes(m_Strings[i]);
+                bytes[i] = b;
+
+                fixed (byte* bPtr = b)
+                {
+                    bHandles[i] = new BlobHandle(bPtr, b.Length);
+                }
+            }
+
+            var bDict = new Dictionary<BlobHandle, int>(m_Strings.Length);
+            for (var i = 0; i < m_Strings.Length; i++)
+            {
+                bDict.Add(bHandles[i], i);
+            }
+
+            // force jit compilation
+            fixed (byte* bPtr = bytes[0])
+            {
+                bDict.TryGetValueFromBytes(bPtr, bytes[0].Length, out var bJitValue);
+            }
+            
+            k_Stopwatch.Restart();
+            foreach (var bh in bHandles)
+            {
+                k_Stopwatch.Start();
+                bDict.TryGetValueFromBytes(bh.Pointer, bh.ByteLength, out var bValue);
+                k_Stopwatch.Stop();
+            }
+            var bTicks = k_Stopwatch.ElapsedTicks;
+
+            WriteLog($"{m_Strings.Length} count, Dictionary.TryGetValueFromBytes() w/ BlobHandle<byte*> {bTicks}");
+        }
+        
         public unsafe void ManagedIntString_SetFromBytes()
         {
             var intStrings = new BlobString[m_Strings.Length];
@@ -196,57 +290,67 @@ namespace BlobHandles.Tests
 
             var unCheckedTicks = k_Stopwatch.ElapsedTicks;
             
-            k_Stopwatch.Reset();
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var byteStr = bytes[i];
-                var intStr = intStrings[i];
-                fixed (byte* bsPtr = &byteStr[0])
-                {
-                    k_Stopwatch.Start();
-                    intStr.SetBytesMemCpy(bsPtr, byteStr.Length);
-                    k_Stopwatch.Stop();
-                }
-            }
-
-            var memCpyTicks = k_Stopwatch.ElapsedTicks;
-            
-            Debug.Log($"count {m_Strings.Length}, SetBytes(), checked {checkedTicks}, unchecked {unCheckedTicks}, memcpy {memCpyTicks}");
+            WriteLog($"count {m_Strings.Length}, SetBytes(), checked {checkedTicks}, unchecked {unCheckedTicks}");
             foreach (var t in intStrings)
                 t.Dispose();
         }
         
-        [Test]
+        public unsafe void GetAsciiStringFromBytes()
+        {
+            var jitAsciiStr = Encoding.ASCII.GetString(new byte[0]);
+            var jitUtf8Str = Encoding.UTF8.GetString(new byte[0]);
+            var bytes = new byte[m_Strings.Length][];
+            for (int i = 0; i < m_Strings.Length; i++)
+            {
+                bytes[i] = Encoding.ASCII.GetBytes(m_Strings[i]);
+            }
+            
+            k_Stopwatch.Restart();
+            for (int i = 0; i < m_Strings.Length; i++)
+            {
+                var b = bytes[i];
+                k_Stopwatch.Start();
+                var str = Encoding.ASCII.GetString(b);
+                k_Stopwatch.Stop();
+            }
+            
+            WriteLog($"Encoding.ASCII.GetString(bytes), {k_Stopwatch.ElapsedTicks}");
+            
+            k_Stopwatch.Restart();
+            for (int i = 0; i < m_Strings.Length; i++)
+            {
+                var b = bytes[i];
+                k_Stopwatch.Start();
+                var str = Encoding.UTF8.GetString(b);
+                k_Stopwatch.Stop();
+            }
+            
+            WriteLog($"Encoding.UTF8.GetString(bytes), {k_Stopwatch.ElapsedTicks}");
+        }
+        
         public unsafe void IntStringLookup_TryGetValueFromBytes()
         {
             var intStrings = new BlobString[m_Strings.Length];
             var bytes = new byte[m_Strings.Length][];
-            m_GcHandles = new GCHandle[m_Strings.Length];
             for (int i = 0; i < m_Strings.Length; i++)
             {
                 var str = m_Strings[i];
                 intStrings[i] = new BlobString(str);
-
-
-                
                 var b = Encoding.ASCII.GetBytes(str);
                 bytes[i] = b;
-                m_GcHandles[i] = GCHandle.Alloc(b, GCHandleType.Pinned);
             }
             
             var lookup = new BlobStringLookup<int>();
             for (int i = 0; i < intStrings.Length; i++)
                 lookup.Add(intStrings[i], i);
 
+            // force JIT compilation of the relevant methods
             fixed (byte* dummyPtr = bytes[0])
             {
                 lookup.TryGetValueFromBytes(dummyPtr, bytes[0].Length, out var value);
+                lookup.TryGetValueFromBytes((int*)dummyPtr, bytes[0].Length, out value);
             }
 
-            var originalHashCodes = new int[m_Strings.Length];
-            for (int i = 0; i < intStrings.Length; i++)
-                originalHashCodes[i] = intStrings[i].GetHashCode();
-            
             k_Stopwatch.Reset();
             for (var i = 0; i < bytes.Length; i++)
             {
@@ -258,30 +362,30 @@ namespace BlobHandles.Tests
                     lookup.TryGetValueFromBytes(byteStrPtr, byteStr.Length, out var value);
 
                     k_Stopwatch.Stop();
-
-                    /*
-                    if (i != value)
-                    {
-                        var srcBlobStr = intStrings[i];
-                        var bytesAsAsciiStr = BlobString.Encoding.GetString(byteStr);
-                        Debug.Log($"source\n{m_Strings[i]}\nblobStr\n{srcBlobStr}\nbytes\n{bytesAsAsciiStr}\n");
-                        
-                        var ogHash = originalHashCodes[i];
-                        var currentHash = srcBlobStr.GetHashCode();
-                        Debug.Log($"original hash: {ogHash}, current hash {currentHash}");
-                    }
-
-                    Assert.AreEqual(i, value);
-                    
                 }
             }
 
-            var ncTicks = k_Stopwatch.ElapsedTicks;
-            Debug.Log($"count {m_Strings.Length}, TryGetValueFromBytes() time in ticks, {ncTicks}");
+            WriteLog($"TryGetValueFromBytes(byte* ) ticks: {k_Stopwatch.ElapsedTicks}");
+            
+            k_Stopwatch.Reset();
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                var byteStr = bytes[i];
+                fixed (byte* byteStrPtr = byteStr)
+                {
+                    var iPtr = (int*) byteStrPtr;
+                    k_Stopwatch.Start();
+
+                    lookup.TryGetValueFromBytes(iPtr, byteStr.Length, out var value);
+
+                    k_Stopwatch.Stop();
+                }
+            }
+            
+            WriteLog($"TryGetValueFromBytes(int* ) ticks: {k_Stopwatch.ElapsedTicks}");
             
             foreach (var t in intStrings)
                 t.Dispose();
         }
-        */
     }
 }
