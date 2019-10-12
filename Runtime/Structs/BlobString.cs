@@ -51,8 +51,10 @@ namespace BlobHandles
         {
             var end = offset + byteLength - 1;
             if (end >= bytes.Length)
+            {
                 throw new ArgumentOutOfRangeException
                     ($"Offset + length = {end} is beyond byte[] length {bytes.Length}");
+            }
 
             var alignedByteLength = (byteLength + 3) & ~3;
             Bytes = new int[alignedByteLength / intSize];

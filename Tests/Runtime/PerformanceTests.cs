@@ -67,7 +67,7 @@ namespace BlobHandles.Tests
             m_File.Write(m_NewLineBytes, 0, m_NewLineBytes.Length);
         }
 
-        public void StringEquals_ManagedIntString()
+        public void BlobString_Equals()
         {
             var searchForIndex = StringCount / 4;
             var searchString = m_Strings[searchForIndex];
@@ -105,7 +105,7 @@ namespace BlobHandles.Tests
                 t.Dispose();
         }
         
-        public void GetHashCode_ManagedIntString()
+        public void ManagedBlobString_GetHashCode()
         {
             var blobStrings = new BlobString[m_Strings.Length];
             for (int i = 0; i < m_Strings.Length; i++)
@@ -140,7 +140,7 @@ namespace BlobHandles.Tests
                 t.Dispose();
         }
         
-        public void DictionaryTryGetValue_ManagedIntString()
+        public void DictionaryTryGetValue_BlobString()
         {
             var blobStrings = new BlobString[m_Strings.Length];
             for (int i = 0; i < m_Strings.Length; i++)
@@ -283,7 +283,7 @@ namespace BlobHandles.Tests
             WriteLog($"Encoding.UTF8.GetString(bytes), {k_Stopwatch.ElapsedTicks}");
         }
         
-        public unsafe void IntStringLookup_TryGetValueFromBytes()
+        public unsafe void BlobStringLookup_TryGetValueFromBytes()
         {
             var blobStrings = new BlobString[m_Strings.Length];
             var bytes = new byte[m_Strings.Length][];

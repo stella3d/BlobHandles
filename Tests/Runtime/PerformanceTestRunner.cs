@@ -24,13 +24,13 @@ namespace BlobHandles
             switch (frame)
             {
                 case 20:
-                    m_Tests.StringEquals_ManagedIntString();
+                    m_Tests.BlobString_Equals();
                     break;
                 case 40:
-                    m_Tests.GetHashCode_ManagedIntString();
+                    m_Tests.ManagedBlobString_GetHashCode();
                     break;
                 case 60:
-                    m_Tests.DictionaryTryGetValue_ManagedIntString();
+                    m_Tests.DictionaryTryGetValue_BlobString();
                     break;
                 case 70:
                     m_Tests.DictionaryTryGetValue_BlobHandles();
@@ -39,7 +39,7 @@ namespace BlobHandles
                     m_Tests.DictionaryExtension_TryGetValueFromBytes();
                     break;
                 case 100:
-                    m_Tests.IntStringLookup_TryGetValueFromBytes();
+                    m_Tests.BlobStringLookup_TryGetValueFromBytes();
                     break;
                 case 120:
                     m_Tests.GetAsciiStringFromBytes();
