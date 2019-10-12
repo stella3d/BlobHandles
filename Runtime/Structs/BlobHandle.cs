@@ -14,8 +14,7 @@ namespace BlobHandles
         public readonly byte* Pointer;
         /// <summary>The number of bytes in the blob</summary>
         public readonly int ByteLength;
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
         public BlobHandle(byte* pointer, int byteLength)
         {
             Pointer = pointer;
@@ -23,23 +22,31 @@ namespace BlobHandles
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public BlobHandle(int* pointer, int byteLength)
-        {
-            Pointer = (byte*) pointer;
-            ByteLength = byteLength;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobHandle other)
         {
-            return ByteLength == other.ByteLength && MemoryCompare(Pointer, other.Pointer, (UIntPtr)ByteLength) == 0;
+            return ByteLength == other.ByteLength && 
+                   MemoryCompare(Pointer, other.Pointer, (UIntPtr) ByteLength) == 0;
         }
-
+        
         public override bool Equals(object obj)
         {
             return obj is BlobHandle other && Equals(other);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(BlobHandle left, BlobHandle right)
+        {
+            return left.ByteLength == right.ByteLength && 
+                   MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.ByteLength) == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(BlobHandle left, BlobHandle right)
+        {
+            return left.ByteLength != right.ByteLength || 
+                   MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.ByteLength) != 0;
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
@@ -49,17 +56,10 @@ namespace BlobHandles
                 return ByteLength * 397 ^ lastValueByte;
             }
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(BlobHandle left, BlobHandle right)
+        
+        public override string ToString()
         {
-            return left.Equals(right);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(BlobHandle left, BlobHandle right)
-        {
-            return !left.Equals(right);
+            return $"{ByteLength.ToString()} bytes @ {new IntPtr(Pointer).ToString()}";
         }
                 
         // comparing bytes using memcmp has shown to be several times faster than any other method i've found

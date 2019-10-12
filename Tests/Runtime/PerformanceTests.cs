@@ -73,16 +73,16 @@ namespace BlobHandles.Tests
             var searchString = m_Strings[searchForIndex];
             var searchIntString = new BlobString(searchString);
             
-            var intStrings = new BlobString[m_Strings.Length];
+            var blobStrings = new BlobString[m_Strings.Length];
             for (int i = 0; i < m_Strings.Length; i++)
-                intStrings[i] = new BlobString(m_Strings[i]);
+                blobStrings[i] = new BlobString(m_Strings[i]);
             
             bool eql;
             // force the jit to compile the equals methods
             foreach (var str in m_Strings)
                 eql = searchString == str;
-            foreach (var intString in intStrings)
-                eql = searchIntString == intString;
+            foreach (var blobString in blobStrings)
+                eql = searchIntString == blobString;
             
             k_Stopwatch.Restart();
             foreach (var str in m_Strings)
@@ -93,28 +93,28 @@ namespace BlobHandles.Tests
             var strTicks = k_Stopwatch.ElapsedTicks;
             
             k_Stopwatch.Restart();
-            foreach (var intString in intStrings)
+            foreach (var blobString in blobStrings)
             {
-                eql = searchIntString == intString;
+                eql = searchIntString == blobString;
             }
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"elements {searchForIndex} Equals(), str {strTicks}, intString  {intStrTicks}");
-            foreach (var t in intStrings)
+            WriteLog($"elements {searchForIndex} Equals(), str {strTicks}, blobString  {intStrTicks}");
+            foreach (var t in blobStrings)
                 t.Dispose();
         }
         
         public void GetHashCode_ManagedIntString()
         {
-            var intStrings = new BlobString[m_Strings.Length];
+            var blobStrings = new BlobString[m_Strings.Length];
             for (int i = 0; i < m_Strings.Length; i++)
-                intStrings[i] = new BlobString(m_Strings[i]);
+                blobStrings[i] = new BlobString(m_Strings[i]);
 
             // force jit to compile hashcode method            
-            foreach (var intString in intStrings)
+            foreach (var blobString in blobStrings)
             {
-                var hc = intString.GetHashCode();
+                var hc = blobString.GetHashCode();
             }
             
             int hashCode;
@@ -127,37 +127,35 @@ namespace BlobHandles.Tests
             var strTicks = k_Stopwatch.ElapsedTicks;
             
             k_Stopwatch.Restart();
-            foreach (var intString in intStrings)
+            foreach (var blobString in blobStrings)
             {
-                hashCode = intString.GetHashCode();
+                hashCode = blobString.GetHashCode();
             }
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"elements {m_Strings.Length} GetHashCode(), str {strTicks}, intString {intStrTicks}");
+            WriteLog($"elements {m_Strings.Length} GetHashCode(), str {strTicks}, blobString {intStrTicks}");
             
-            foreach (var t in intStrings)
+            foreach (var t in blobStrings)
                 t.Dispose();
         }
         
         public void DictionaryTryGetValue_ManagedIntString()
         {
-            var intStrings = new BlobString[m_Strings.Length];
+            var blobStrings = new BlobString[m_Strings.Length];
             for (int i = 0; i < m_Strings.Length; i++)
-                intStrings[i] = new BlobString(m_Strings[i]);
+                blobStrings[i] = new BlobString(m_Strings[i]);
 
             var strDict = new Dictionary<string, int>(m_Strings.Length);
             for (var i = 0; i < m_Strings.Length; i++)
                 strDict.Add(m_Strings[i], i);
 
-            var intStrDict = new Dictionary<BlobString, int>(intStrings.Length);
-            for (var i = 0; i < intStrings.Length; i++)
-                intStrDict.Add(intStrings[i], i);
+            var intStrDict = new Dictionary<BlobString, int>(blobStrings.Length);
+            for (var i = 0; i < blobStrings.Length; i++)
+                intStrDict.Add(blobStrings[i], i);
             
-            foreach (var intString in intStrings)
-            {
-                intStrDict.TryGetValue(intString, out var index);
-            }
+            foreach (var blobString in blobStrings)
+                intStrDict.TryGetValue(blobString, out var index);
             
             k_Stopwatch.Restart();
             foreach (var str in m_Strings)
@@ -168,16 +166,16 @@ namespace BlobHandles.Tests
             var strTicks = k_Stopwatch.ElapsedTicks;
 
             k_Stopwatch.Restart();
-            foreach (var intString in intStrings)
+            foreach (var blobString in blobStrings)
             {
-                intStrDict.TryGetValue(intString, out var index);
+                intStrDict.TryGetValue(blobString, out var index);
             }
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"elements {m_Strings.Length} Dictionary.TryGetValue, str {strTicks}, intString {intStrTicks}");
+            WriteLog($"elements {m_Strings.Length} Dictionary.TryGetValue, str {strTicks}, blobString {intStrTicks}");
             
-            foreach (var t in intStrings)
+            foreach (var t in blobStrings)
                 t.Dispose();
         }
         
@@ -198,9 +196,7 @@ namespace BlobHandles.Tests
 
             var bDict = new Dictionary<BlobHandle, int>(m_Strings.Length);
             for (var i = 0; i < m_Strings.Length; i++)
-            {
                 bDict.Add(bHandles[i], i);
-            }
 
             // force jit compilation
             bDict.TryGetValue(bHandles[0], out var bJitValue);
@@ -234,9 +230,7 @@ namespace BlobHandles.Tests
 
             var bDict = new Dictionary<BlobHandle, int>(m_Strings.Length);
             for (var i = 0; i < m_Strings.Length; i++)
-            {
                 bDict.Add(bHandles[i], i);
-            }
 
             // force jit compilation
             fixed (byte* bPtr = bytes[0])
@@ -291,61 +285,40 @@ namespace BlobHandles.Tests
         
         public unsafe void IntStringLookup_TryGetValueFromBytes()
         {
-            var intStrings = new BlobString[m_Strings.Length];
+            var blobStrings = new BlobString[m_Strings.Length];
             var bytes = new byte[m_Strings.Length][];
             for (int i = 0; i < m_Strings.Length; i++)
             {
                 var str = m_Strings[i];
-                intStrings[i] = new BlobString(str);
+                blobStrings[i] = new BlobString(str);
                 var b = Encoding.ASCII.GetBytes(str);
                 bytes[i] = b;
             }
             
             var lookup = new BlobStringDictionary<int>();
-            for (int i = 0; i < intStrings.Length; i++)
-                lookup.Add(intStrings[i], i);
+            for (int i = 0; i < blobStrings.Length; i++)
+                lookup.Add(blobStrings[i], i);
 
-            // force JIT compilation of the relevant methods
+            // force JIT compilation of the relevant method
             fixed (byte* dummyPtr = bytes[0])
             {
                 lookup.TryGetValueFromBytes(dummyPtr, bytes[0].Length, out var value);
-                lookup.TryGetValueFromBytes((int*)dummyPtr, bytes[0].Length, out value);
             }
 
             k_Stopwatch.Reset();
-            for (var i = 0; i < bytes.Length; i++)
+            foreach (var byteStr in bytes)
             {
-                var byteStr = bytes[i];
                 fixed (byte* byteStrPtr = byteStr)
                 {
                     k_Stopwatch.Start();
-
                     lookup.TryGetValueFromBytes(byteStrPtr, byteStr.Length, out var value);
-
                     k_Stopwatch.Stop();
                 }
             }
 
             WriteLog($"TryGetValueFromBytes(byte* ) ticks: {k_Stopwatch.ElapsedTicks}");
             
-            k_Stopwatch.Reset();
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                var byteStr = bytes[i];
-                fixed (byte* byteStrPtr = byteStr)
-                {
-                    var iPtr = (int*) byteStrPtr;
-                    k_Stopwatch.Start();
-
-                    lookup.TryGetValueFromBytes(iPtr, byteStr.Length, out var value);
-
-                    k_Stopwatch.Stop();
-                }
-            }
-            
-            WriteLog($"TryGetValueFromBytes(int* ) ticks: {k_Stopwatch.ElapsedTicks}");
-            
-            foreach (var t in intStrings)
+            foreach (var t in blobStrings)
                 t.Dispose();
         }
     }

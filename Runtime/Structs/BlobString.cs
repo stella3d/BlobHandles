@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using Unity.IL2CPP.CompilerServices;
 
 namespace BlobHandles
 {
@@ -20,6 +19,7 @@ namespace BlobHandles
         /// </summary>
         public static Encoding Encoding { get; set; } = Encoding.ASCII;
         
+        /// <summary>Stores all of the bytes that represent this string</summary>
         readonly int[] Bytes; 
         readonly GCHandle BytesGcHandle;
         
@@ -33,45 +33,32 @@ namespace BlobHandles
             var alignedByteCount = (bytes.Length + 3) & ~3;
             Bytes = new int[alignedByteCount / intSize];
             Buffer.BlockCopy(bytes, 0, Bytes, 0, bytes.Length);
-            // pin the address of our bytes for the lifetime of this object
+            // pin the address of our bytes for the lifetime of this string
             BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
-            Handle = new BlobHandle((int*) BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
-        }
-        
-        public BlobString(BlobString copySource, int sourceByteOffset = 0)
-        {
-            var handle = copySource.Handle;
-            var alignedByteLength = (handle.ByteLength + 3) & ~3;
-            Bytes = new int[alignedByteLength / intSize];
-            Buffer.BlockCopy(copySource.Bytes, sourceByteOffset, Bytes, 0, handle.ByteLength);
-            // pin the address of our bytes for the lifetime of this object
-            BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
-            Handle = new BlobHandle((int*) BytesGcHandle.AddrOfPinnedObject(), handle.ByteLength);
+            Handle = new BlobHandle((byte*)BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
         }
         
         public BlobString(byte[] bytes)
         {
-            this = new BlobString(bytes, bytes.Length);
+            var alignedByteLength = (bytes.Length + 3) & ~3;
+            Bytes = new int[alignedByteLength / intSize];
+            Buffer.BlockCopy(bytes, 0, Bytes, 0, bytes.Length);
+            BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
+            Handle = new BlobHandle((byte*) BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
         }
         
         public BlobString(byte[] bytes, int byteLength, int offset = 0)
         {
+            var end = offset + byteLength - 1;
+            if (end >= bytes.Length)
+                throw new ArgumentOutOfRangeException
+                    ($"Offset + length = {end} is beyond byte[] length {bytes.Length}");
+
             var alignedByteLength = (byteLength + 3) & ~3;
             Bytes = new int[alignedByteLength / intSize];
             Buffer.BlockCopy(bytes, offset, Bytes, 0, byteLength);
-            // pin the address of our bytes for the lifetime of this object
             BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
-            Handle = new BlobHandle((int*) BytesGcHandle.AddrOfPinnedObject(), byteLength);
-        }
-
-        public override string ToString()
-        {
-            return Encoding.GetString(Handle.Pointer, Handle.ByteLength);
-        }
-
-        public void Dispose()
-        {
-            if(BytesGcHandle.IsAllocated) BytesGcHandle.Free();
+            Handle = new BlobHandle((byte*) BytesGcHandle.AddrOfPinnedObject(), byteLength);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -80,28 +67,37 @@ namespace BlobHandles
             return Handle.GetHashCode();
         }
 
-        [Il2CppSetOption(Option.NullChecks, false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobString other)
         {
             return Handle.Equals(other.Handle);
         }
-
+        
         public override bool Equals(object obj)
         {
-            return !ReferenceEquals(null, obj) && Equals((BlobString) obj);
+            return obj is BlobString other && Handle.Equals(other.Handle);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(BlobString l, BlobString r)
         {
             return l.Handle == r.Handle;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(BlobString l, BlobString r)
         {
             return l.Handle != r.Handle;
         }
-
+        
+        public override string ToString()
+        {
+            return Encoding.GetString(Handle.Pointer, Handle.ByteLength);
+        }
+        
+        public void Dispose()
+        {
+            if(BytesGcHandle.IsAllocated) BytesGcHandle.Free();
+        }
     }
 }
-

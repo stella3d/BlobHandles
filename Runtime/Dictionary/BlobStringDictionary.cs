@@ -50,6 +50,7 @@ namespace BlobHandles
         /// <summary>Removes the value with the specified key</summary>
         /// <param name="str">The string to remove</param>
         /// <returns>true if the string was found and removed, false otherwise</returns>
+        [Il2CppSetOption(Option.NullChecks, false)]
         public bool Remove(string str)
         {
             if (!SourceMap.TryGetValue(str, out var blobStr)) 
@@ -64,6 +65,7 @@ namespace BlobHandles
         /// <summary>Removes the value with the specified key</summary>
         /// <param name="blobStr">The blob string to remove</param>
         /// <returns>true if the string was found and removed, false otherwise</returns>
+        [Il2CppSetOption(Option.NullChecks, false)]
         public bool Remove(BlobString blobStr)
         {
             return Dictionary.Remove(blobStr.Handle);
@@ -76,15 +78,8 @@ namespace BlobHandles
             var tempHandle = new BlobHandle(ptr, byteCount);
             return Dictionary.TryGetValue(tempHandle, out value);
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Il2CppSetOption(Option.NullChecks, false)]
-        public bool TryGetValueFromBytes(int* ptr, int byteCount, out T value)
-        {
-            var tempHandle = new BlobHandle(ptr, byteCount);
-            return Dictionary.TryGetValue(tempHandle, out value);
-        }
 
+        [Il2CppSetOption(Option.NullChecks, false)]
         public void Clear()
         {
             Dictionary.Clear();
