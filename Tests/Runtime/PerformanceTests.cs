@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -32,27 +33,34 @@ namespace BlobHandles.Tests
             // init state to make sure that we always get the same test results
             Random.InitState(303);
             m_Strings = TestData.RandomStringsWithPrefix("/composition", StringCount, MinLength, MaxLength);
-            m_File = new FileStream(RuntimeLog, FileMode.OpenOrCreate);
-            WriteEnvironmentInfo();
+
+            var mode = File.Exists(RuntimeLog) ? FileMode.Append : FileMode.Create;
+            m_File = new FileStream(RuntimeLog, mode); 
+            WriteEnvironmentInfo(mode);
         }
 
         // write out automatic compiler & environment info
-        void WriteEnvironmentInfo()
+        void WriteEnvironmentInfo(FileMode mode)
         {
-            m_File.Write(m_NewLineBytes, 0, 0);
+            if(mode == FileMode.Append)
+                m_File.Write(m_NewLineBytes, 0, m_NewLineBytes.Length);
+            
             var versionBytes = Encoding.ASCII.GetBytes(Application.unityVersion);
-            m_File.Write(versionBytes, 0, 0);
+            m_File.Write(versionBytes, 0, versionBytes.Length);
 #if UNITY_EDITOR
-            var editorBytes = Encoding.ASCII.GetBytes("Editor,");
-            m_File.Write(editorBytes, 0, 0);
+            var editorBytes = Encoding.ASCII.GetBytes(" - Editor, ");
+            m_File.Write(editorBytes, 0, editorBytes.Length);
+#else
+            var playerBytes = Encoding.ASCII.GetBytes(" - Player, ");
+            m_File.Write(playerBytes, 0, playerBytes.Length);
 #endif
 #if ENABLE_IL2CPP
             var runtimeBytes = Encoding.ASCII.GetBytes("IL2CPP");
 #else
-            var runtimeBytes = Encoding.ASCII.GetBytes(" Mono");
+            var runtimeBytes = Encoding.ASCII.GetBytes("Mono");
 #endif
-            m_File.Write(runtimeBytes, 0, 0);
-            m_File.Write(m_NewLineBytes, 0, 0);
+            m_File.Write(runtimeBytes, 0, runtimeBytes.Length);
+            m_File.Write(m_NewLineBytes, 0, m_NewLineBytes.Length);
         }
 
         public void AfterAll()
@@ -87,7 +95,7 @@ namespace BlobHandles.Tests
             k_Stopwatch.Restart();
             foreach (var str in m_Strings)
             {
-                eql = searchString == str;
+                eql = searchString.Equals(str);
             }
             k_Stopwatch.Stop();
             var strTicks = k_Stopwatch.ElapsedTicks;
@@ -95,7 +103,7 @@ namespace BlobHandles.Tests
             k_Stopwatch.Restart();
             foreach (var blobString in blobStrings)
             {
-                eql = searchIntString == blobString;
+                eql = searchIntString.Equals(blobString);
             }
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
@@ -270,6 +278,7 @@ namespace BlobHandles.Tests
             }
             
             WriteLog($"Encoding.ASCII.GetString(bytes), {k_Stopwatch.ElapsedTicks}");
+            GC.Collect();
             
             k_Stopwatch.Restart();
             for (int i = 0; i < m_Strings.Length; i++)
@@ -281,6 +290,7 @@ namespace BlobHandles.Tests
             }
             
             WriteLog($"Encoding.UTF8.GetString(bytes), {k_Stopwatch.ElapsedTicks}");
+            GC.Collect();
         }
         
         public unsafe void BlobStringLookup_TryGetValueFromBytes()
