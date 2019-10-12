@@ -9,7 +9,7 @@ namespace BlobHandles
     /// Store a string as a series of 32-bit integers.
     /// Essentially, a trick to allow using chunks of bytes as fast dictionary keys in place of strings
     /// </summary>
-    public unsafe struct BlobString : IDisposable, IEquatable<BlobString>
+    public struct BlobString : IDisposable, IEquatable<BlobString>
     {
         const int intSize = 4;
         
@@ -35,7 +35,7 @@ namespace BlobHandles
             Buffer.BlockCopy(bytes, 0, Bytes, 0, bytes.Length);
             // pin the address of our bytes for the lifetime of this string
             BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
-            Handle = new BlobHandle((byte*)BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
+            Handle = new BlobHandle(BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
         }
         
         public BlobString(byte[] bytes)
@@ -44,7 +44,7 @@ namespace BlobHandles
             Bytes = new int[alignedByteLength / intSize];
             Buffer.BlockCopy(bytes, 0, Bytes, 0, bytes.Length);
             BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
-            Handle = new BlobHandle((byte*) BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
+            Handle = new BlobHandle(BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
         }
         
         public BlobString(byte[] bytes, int byteLength, int offset = 0)
@@ -53,14 +53,14 @@ namespace BlobHandles
             if (end >= bytes.Length)
             {
                 throw new ArgumentOutOfRangeException
-                    ($"Offset + length = {end} is beyond byte[] length {bytes.Length}");
+                    ($"Offset + length - 1 = {end} is beyond byte[] length {bytes.Length}");
             }
 
             var alignedByteLength = (byteLength + 3) & ~3;
             Bytes = new int[alignedByteLength / intSize];
             Buffer.BlockCopy(bytes, offset, Bytes, 0, byteLength);
             BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
-            Handle = new BlobHandle((byte*) BytesGcHandle.AddrOfPinnedObject(), byteLength);
+            Handle = new BlobHandle(BytesGcHandle.AddrOfPinnedObject(), byteLength);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -92,7 +92,7 @@ namespace BlobHandles
             return l.Handle != r.Handle;
         }
         
-        public override string ToString()
+        public override unsafe string ToString()
         {
             return Encoding.GetString(Handle.Pointer, Handle.ByteLength);
         }

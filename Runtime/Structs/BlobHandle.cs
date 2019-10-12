@@ -21,6 +21,12 @@ namespace BlobHandles
             ByteLength = byteLength;
         }
         
+        public BlobHandle(IntPtr pointer, int byteLength)
+        {
+            Pointer = (byte*) pointer;
+            ByteLength = byteLength;
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobHandle other)
         {
