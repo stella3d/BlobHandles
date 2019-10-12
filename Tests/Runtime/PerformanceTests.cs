@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using BlobHandles.Tests;
+using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -14,7 +15,7 @@ namespace BlobHandles.Tests
     {
         static readonly Stopwatch k_Stopwatch = new Stopwatch();
         
-        public int StringCount = 1001;
+        public int StringCount = 1000;
         
         public int MinLength = 20;
         public int MaxLength = 100;
@@ -37,6 +38,10 @@ namespace BlobHandles.Tests
             var mode = File.Exists(RuntimeLog) ? FileMode.Append : FileMode.Create;
             m_File = new FileStream(RuntimeLog, mode); 
             WriteEnvironmentInfo(mode);
+
+            var countBytes = Encoding.ASCII.GetBytes($"repeat count: {StringCount.ToString()}, times in ticks");
+            m_File.Write(countBytes, 0, countBytes.Length);
+            m_File.Write(m_NewLineBytes, 0, m_NewLineBytes.Length);
         }
 
         // write out automatic compiler & environment info
@@ -79,7 +84,7 @@ namespace BlobHandles.Tests
         {
             var searchForIndex = StringCount / 4;
             var searchString = m_Strings[searchForIndex];
-            var searchIntString = new BlobString(searchString);
+            var searchBlobString = new BlobString(searchString);
             
             var blobStrings = new BlobString[m_Strings.Length];
             for (int i = 0; i < m_Strings.Length; i++)
@@ -88,9 +93,9 @@ namespace BlobHandles.Tests
             bool eql;
             // force the jit to compile the equals methods
             foreach (var str in m_Strings)
-                eql = searchString == str;
+                eql = searchString.Equals(str);
             foreach (var blobString in blobStrings)
-                eql = searchIntString == blobString;
+                eql = searchBlobString.Equals(blobString);
             
             k_Stopwatch.Restart();
             foreach (var str in m_Strings)
@@ -103,12 +108,12 @@ namespace BlobHandles.Tests
             k_Stopwatch.Restart();
             foreach (var blobString in blobStrings)
             {
-                eql = searchIntString.Equals(blobString);
+                eql = searchBlobString.Equals(blobString);
             }
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"elements {searchForIndex} Equals(), str {strTicks}, blobString  {intStrTicks}");
+            WriteLog($"Equals(), str {strTicks}, blobString  {intStrTicks}");
             foreach (var t in blobStrings)
                 t.Dispose();
         }
@@ -124,6 +129,7 @@ namespace BlobHandles.Tests
             {
                 var hc = blobString.GetHashCode();
             }
+
             
             int hashCode;
             k_Stopwatch.Restart();
@@ -142,7 +148,7 @@ namespace BlobHandles.Tests
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"elements {m_Strings.Length} GetHashCode(), str {strTicks}, blobString {intStrTicks}");
+            WriteLog($"GetHashCode(), str {strTicks}, blobString {intStrTicks}");
             
             foreach (var t in blobStrings)
                 t.Dispose();
@@ -181,7 +187,7 @@ namespace BlobHandles.Tests
             k_Stopwatch.Stop();
             var intStrTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"elements {m_Strings.Length} Dictionary.TryGetValue, str {strTicks}, blobString {intStrTicks}");
+            WriteLog($"Dictionary.TryGetValue, str {strTicks}, blobString {intStrTicks}");
             
             foreach (var t in blobStrings)
                 t.Dispose();
@@ -218,7 +224,7 @@ namespace BlobHandles.Tests
             }
             var bTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"{m_Strings.Length} count, Dictionary.TryGetValue() w/ BlobHandle key {bTicks}");
+            WriteLog($"Dictionary.TryGetValue() w/ BlobHandle key {bTicks}");
         }
         
         public unsafe void DictionaryExtension_TryGetValueFromBytes()
@@ -246,16 +252,29 @@ namespace BlobHandles.Tests
                 bDict.TryGetValueFromBytes(bPtr, bytes[0].Length, out var bJitValue);
             }
             
-            k_Stopwatch.Restart();
-            foreach (var bh in bHandles)
+            // copy bytes so we can make sure we're not comparing identical pointers
+            var copiedBytes = new byte[m_Strings.Length][];
+            for (var i = 0; i < bytes.Length; i++)
             {
-                k_Stopwatch.Start();
-                bDict.TryGetValueFromBytes(bh.Pointer, bh.ByteLength, out var bValue);
-                k_Stopwatch.Stop();
+                var src = bytes[i];
+                var copied = new byte[src.Length];
+                copiedBytes[i] = copied;
+                Buffer.BlockCopy(src, 0, copied, 0, src.Length);
+            }
+
+            k_Stopwatch.Restart();
+            foreach (var byteArray in copiedBytes)
+            {
+                fixed (byte* ptr = byteArray)
+                {
+                    k_Stopwatch.Start();
+                    bDict.TryGetValueFromBytes(ptr, byteArray.Length, out var bValue);
+                    k_Stopwatch.Stop();
+                }
             }
             var bTicks = k_Stopwatch.ElapsedTicks;
 
-            WriteLog($"{m_Strings.Length} count, Dictionary.TryGetValueFromBytes() w/ BlobHandle<byte*> {bTicks}");
+            WriteLog($"Dictionary.TryGetValueFromBytes() w/ BlobHandle {bTicks}");
         }
         
         public unsafe void GetAsciiStringFromBytes()

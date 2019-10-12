@@ -27,6 +27,20 @@ namespace BlobHandles
             ByteLength = byteLength;
         }
         
+        /// <summary>
+        /// Get a blob handle for a byte array. WARNING - the byte array must have its address pinned to work safely!
+        /// If not pinned, it will work unless the the runtime decides to move the array.
+        /// </summary>
+        /// <param name="bytes">The bytes to get a handle to</param>
+        public BlobHandle(byte[] bytes)
+        {
+            fixed (byte* ptr = bytes)
+            {
+                Pointer = ptr;
+                ByteLength = bytes.Length;
+            }
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobHandle other)
         {
