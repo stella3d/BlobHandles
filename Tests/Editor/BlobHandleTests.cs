@@ -15,7 +15,7 @@ namespace BlobHandles.Tests
             {
                 var handle = new BlobHandle(bPtr, b1.Length);
                 Assert.True(handle.Pointer == bPtr);
-                Assert.True(handle.ByteLength == b1.Length);
+                Assert.True(handle.Length == b1.Length);
             }
         }
         
@@ -27,7 +27,7 @@ namespace BlobHandles.Tests
             {
                 var handle = new BlobHandle((IntPtr) bPtr, b1.Length);
                 Assert.True(handle.Pointer == bPtr);
-                Assert.True(handle.ByteLength == b1.Length);
+                Assert.True(handle.Length == b1.Length);
             }
         }
         

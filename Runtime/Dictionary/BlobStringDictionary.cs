@@ -13,29 +13,26 @@ namespace BlobHandles
     {
         const int defaultSize = 16;
         
-        readonly Dictionary<BlobHandle, T> Dictionary;
-
-        // map from a managed string to its blob representation
-        readonly Dictionary<string, BlobString> SourceMap;
+        readonly Dictionary<BlobHandle, T> HandleToValue;
+        readonly Dictionary<string, BlobString> SourceToBlob;
 
         public BlobStringDictionary(int initialCapacity = defaultSize)
         {
-            Dictionary = new Dictionary<BlobHandle, T>(initialCapacity);
-            SourceMap = new Dictionary<string, BlobString>(initialCapacity);
+            HandleToValue = new Dictionary<BlobHandle, T>(initialCapacity);
+            SourceToBlob = new Dictionary<string, BlobString>(initialCapacity);
         }
         
         /// <summary>Converts a string into a BlobString and adds it and the value to the dictionary</summary>
         /// <param name="str">The string to add</param>
         /// <param name="value">The value to associate with the key</param>
-        [Il2CppSetOption(Option.NullChecks, false)]
         public void Add(string str, T value)
         {
-            if (SourceMap.ContainsKey(str)) 
+            if (str == null || SourceToBlob.ContainsKey(str)) 
                 return;
             
             var blobStr = new BlobString(str);
-            Dictionary.Add(blobStr.Handle, value);
-            SourceMap.Add(str, blobStr);
+            HandleToValue.Add(blobStr.Handle, value);
+            SourceToBlob.Add(str, blobStr);
         }
         
         /// <summary>Adds a BlobString and its associated value to the dictionary</summary>
@@ -44,7 +41,7 @@ namespace BlobHandles
         [Il2CppSetOption(Option.NullChecks, false)]
         public void Add(BlobString blobStr, T value)
         {
-            Dictionary.Add(blobStr.Handle, value);
+            HandleToValue.Add(blobStr.Handle, value);
         }
         
         /// <summary>Removes the value with the specified key</summary>
@@ -53,11 +50,11 @@ namespace BlobHandles
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool Remove(string str)
         {
-            if (!SourceMap.TryGetValue(str, out var blobStr)) 
+            if (!SourceToBlob.TryGetValue(str, out var blobStr)) 
                 return false;
 
-            SourceMap.Remove(str);
-            var removed = Dictionary.Remove(blobStr.Handle);
+            SourceToBlob.Remove(str);
+            var removed = HandleToValue.Remove(blobStr.Handle);
             blobStr.Dispose();
             return removed;
         }
@@ -68,27 +65,26 @@ namespace BlobHandles
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool Remove(BlobString blobStr)
         {
-            return Dictionary.Remove(blobStr.Handle);
+            return HandleToValue.Remove(blobStr.Handle);
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Il2CppSetOption(Option.NullChecks, false)]
         public bool TryGetValueFromBytes(byte* ptr, int byteCount, out T value)
         {
-            var tempHandle = new BlobHandle(ptr, byteCount);
-            return Dictionary.TryGetValue(tempHandle, out value);
+            return HandleToValue.TryGetValue(new BlobHandle(ptr, byteCount), out value);
         }
 
         [Il2CppSetOption(Option.NullChecks, false)]
         public void Clear()
         {
-            Dictionary.Clear();
-            SourceMap.Clear();
+            HandleToValue.Clear();
+            SourceToBlob.Clear();
         }
 
         public void Dispose()
         {
-            foreach (var kvp in SourceMap)
+            foreach (var kvp in SourceToBlob)
                 kvp.Value.Dispose();
         }
     }

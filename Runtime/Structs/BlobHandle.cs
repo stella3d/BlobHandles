@@ -13,23 +13,22 @@ namespace BlobHandles
         /// <summary>A pointer to the start of the blob</summary>
         public readonly byte* Pointer;
         /// <summary>The number of bytes in the blob</summary>
-        public readonly int ByteLength;
+        public readonly int Length;
 
-        public BlobHandle(byte* pointer, int byteLength)
+        public BlobHandle(byte* pointer, int length)
         {
             Pointer = pointer;
-            ByteLength = byteLength;
+            Length = length;
         }
         
-        public BlobHandle(IntPtr pointer, int byteLength)
+        public BlobHandle(IntPtr pointer, int length)
         {
             Pointer = (byte*) pointer;
-            ByteLength = byteLength;
+            Length = length;
         }
         
         /// <summary>
-        /// Get a blob handle for a byte array. WARNING - the byte array must have its address pinned to work safely!
-        /// If not pinned, it will work unless the the runtime decides to move the array.
+        /// Get a blob handle for a byte array. The byte array must have its address pinned to work safely!
         /// </summary>
         /// <param name="bytes">The bytes to get a handle to</param>
         public BlobHandle(byte[] bytes)
@@ -37,15 +36,44 @@ namespace BlobHandles
             fixed (byte* ptr = bytes)
             {
                 Pointer = ptr;
-                ByteLength = bytes.Length;
+                Length = bytes.Length;
             }
         }
-        
+
+        /// <summary>
+        /// Get a blob handle for part of a byte array. The byte array must have its address pinned to work safely!
+        /// </summary>
+        /// <param name="bytes">The bytes to get a handle to</param>
+        /// <param name="length">The number of bytes to include. Not bounds checked</param>
+        public BlobHandle(byte[] bytes, int length)
+        {
+            fixed (byte* ptr = bytes)
+            {
+                Pointer = ptr;
+                Length = length;
+            }
+        }
+
+        /// <summary>
+        /// Get a blob handle for a slice of a byte array. The byte array must have its address pinned to work safely!
+        /// </summary>
+        /// <param name="bytes">The bytes to get a handle to</param>
+        /// <param name="length">The number of bytes to include. Not bounds checked</param>
+        /// <param name="offset">The byte array index to start the blob at</param>
+        public BlobHandle(byte[] bytes, int length, int offset)
+        {
+            fixed (byte* ptr = &bytes[offset])
+            {
+                Pointer = ptr;
+                Length = length;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobHandle other)
         {
-            return ByteLength == other.ByteLength && 
-                   MemoryCompare(Pointer, other.Pointer, (UIntPtr) ByteLength) == 0;
+            return Length == other.Length && 
+                   MemoryCompare(Pointer, other.Pointer, (UIntPtr) Length) == 0;
         }
         
         public override bool Equals(object obj)
@@ -56,15 +84,15 @@ namespace BlobHandles
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(BlobHandle left, BlobHandle right)
         {
-            return left.ByteLength == right.ByteLength && 
-                   MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.ByteLength) == 0;
+            return left.Length == right.Length && 
+                   MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.Length) == 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(BlobHandle left, BlobHandle right)
         {
-            return left.ByteLength != right.ByteLength || 
-                   MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.ByteLength) != 0;
+            return left.Length != right.Length || 
+                   MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.Length) != 0;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -72,14 +100,13 @@ namespace BlobHandles
         {
             unchecked
             {
-                var lastValueByte = *(Pointer + ByteLength - 1);
-                return ByteLength * 397 ^ lastValueByte;
+                return Length * 397 ^ *(Pointer + Length - 1);
             }
         }
         
         public override string ToString()
         {
-            return $"{ByteLength.ToString()} bytes @ {new IntPtr(Pointer).ToString()}";
+            return $"{Length.ToString()} bytes @ {new IntPtr(Pointer).ToString()}";
         }
                 
         // comparing bytes using memcmp has shown to be several times faster than any other method i've found
