@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace BlobHandles
 {
@@ -106,7 +107,12 @@ namespace BlobHandles
         
         public override string ToString()
         {
+#if DEBUG_BLOBHANDLE
+            var len = Length.ToString(); 
+            return $"{len} bytes @ {new IntPtr(Pointer).ToString()}\n{Encoding.UTF8.GetString(Pointer, Length)}";
+#else
             return $"{Length.ToString()} bytes @ {new IntPtr(Pointer).ToString()}";
+#endif
         }
                 
         // comparing bytes using memcmp has shown to be several times faster than any other method i've found

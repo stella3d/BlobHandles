@@ -13,7 +13,7 @@ namespace BlobHandles
     {
         const int defaultSize = 16;
         
-        readonly Dictionary<BlobHandle, T> HandleToValue;
+        public readonly Dictionary<BlobHandle, T> HandleToValue;
         readonly Dictionary<string, BlobString> SourceToBlob;
 
         public BlobStringDictionary(int initialCapacity = defaultSize)
