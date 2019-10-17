@@ -32,6 +32,14 @@ namespace BlobHandles
             BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
             Handle = new BlobHandle(BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
         }
+        
+        public unsafe BlobString(byte* sourcePtr, int length)
+        {
+            Handle = new BlobHandle(sourcePtr, length);
+            // pin the address of our bytes for the lifetime of this string
+            BytesGcHandle = default;
+            Bytes = default;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
