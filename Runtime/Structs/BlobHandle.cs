@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace BlobHandles
 {
@@ -29,7 +28,7 @@ namespace BlobHandles
         }
         
         /// <summary>
-        /// Get a blob handle for a byte array. The byte array must have its address pinned to work safely!
+        /// Get a blob handle for a byte array. The byte array should have its address pinned to work safely!
         /// </summary>
         /// <param name="bytes">The bytes to get a handle to</param>
         public BlobHandle(byte[] bytes)
@@ -42,7 +41,7 @@ namespace BlobHandles
         }
 
         /// <summary>
-        /// Get a blob handle for part of a byte array. The byte array must have its address pinned to work safely!
+        /// Get a blob handle for part of a byte array. The byte array should have its address pinned to work safely!
         /// </summary>
         /// <param name="bytes">The bytes to get a handle to</param>
         /// <param name="length">The number of bytes to include. Not bounds checked</param>
@@ -56,7 +55,7 @@ namespace BlobHandles
         }
 
         /// <summary>
-        /// Get a blob handle for a slice of a byte array. The byte array must have its address pinned to work safely!
+        /// Get a blob handle for a slice of a byte array. The byte array should have its address pinned to work safely!
         /// </summary>
         /// <param name="bytes">The bytes to get a handle to</param>
         /// <param name="length">The number of bytes to include. Not bounds checked</param>
