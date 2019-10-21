@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace BlobHandles
 {
@@ -17,27 +18,29 @@ namespace BlobHandles
         public static Encoding Encoding { get; set; } = Encoding.ASCII;
         
         /// <summary>Stores all of the bytes that represent this string</summary>
-        readonly byte[] Bytes; 
-        readonly GCHandle BytesGcHandle;
+        readonly NativeArray<byte> Bytes; 
         
         public readonly BlobHandle Handle;
 
         public int Length => Bytes.Length;
         
-        public BlobString(string source)
+        public unsafe BlobString(string source, Allocator allocator = Allocator.Persistent)
         {
-            var bytes = Encoding.GetBytes(source);
-            Bytes = bytes;
-            // pin the address of our bytes for the lifetime of this string
-            BytesGcHandle = GCHandle.Alloc(Bytes, GCHandleType.Pinned);
-            Handle = new BlobHandle(BytesGcHandle.AddrOfPinnedObject(), bytes.Length);
+            var byteCount = Encoding.GetByteCount(source);
+            Bytes = new NativeArray<byte>(byteCount, allocator);
+            var nativeBytesPtr = (byte*) Bytes.GetUnsafePtr();
+            
+            // write encoded string bytes directly to unmanaged memory
+            fixed (char* strPtr = source)
+            {
+                Encoding.GetBytes(strPtr, source.Length, nativeBytesPtr, byteCount);
+                Handle = new BlobHandle(nativeBytesPtr, byteCount);
+            }
         }
         
         public unsafe BlobString(byte* sourcePtr, int length)
         {
             Handle = new BlobHandle(sourcePtr, length);
-            // pin the address of our bytes for the lifetime of this string
-            BytesGcHandle = default;
             Bytes = default;
         }
 
@@ -74,7 +77,7 @@ namespace BlobHandles
         
         public void Dispose()
         {
-            if(BytesGcHandle.IsAllocated) BytesGcHandle.Free();
+            if(Bytes.IsCreated) Bytes.Dispose();
         }
     }
 }
