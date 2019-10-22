@@ -36,6 +36,9 @@ For dealing with strings, there is `BlobStringDictionary<T>`.  You add regular C
  }
 ```
 
+There are a number of other [TryGetValueFromBytes() overloads](Runtime/Dictionary/BlobHandleDictionaryMethods.cs) for using with offsets into arrays and pointers .
+
+
 ## Performance Details
 
 ###### Memory & Constructors
