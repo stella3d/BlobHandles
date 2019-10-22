@@ -12,12 +12,12 @@ namespace BlobHandles
     public struct BlobString : IDisposable, IEquatable<BlobString>
     {
         /// <summary>
-        /// The encoding used to convert to & from strings.
+        /// The encoding used to convert to and from strings.
         /// WARNING - Changing this after strings have been encoded will probably lead to errors!
         /// </summary>
         public static Encoding Encoding { get; set; } = Encoding.ASCII;
         
-        /// <summary>Stores all of the bytes that represent this string</summary>
+        // Stores all of the bytes that represent this string
         readonly NativeArray<byte> Bytes; 
         
         public readonly BlobHandle Handle;
@@ -43,6 +43,11 @@ namespace BlobHandles
             Handle = new BlobHandle(sourcePtr, length);
             Bytes = default;
         }
+                
+        public override unsafe string ToString()
+        {
+            return Encoding.GetString(Handle.Pointer, Handle.Length);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
@@ -50,6 +55,7 @@ namespace BlobHandles
             return Handle.GetHashCode();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobString other)
         {
             return Handle.Equals(other.Handle);
@@ -68,11 +74,6 @@ namespace BlobHandles
         public static bool operator !=(BlobString l, BlobString r)
         {
             return l.Handle != r.Handle;
-        }
-        
-        public override unsafe string ToString()
-        {
-            return Encoding.GetString(Handle.Pointer, Handle.Length);
         }
         
         public void Dispose()

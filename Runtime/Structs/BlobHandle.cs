@@ -68,6 +68,20 @@ namespace BlobHandles
                 Length = length;
             }
         }
+        
+        public override string ToString()
+        {
+            return $"{Length.ToString()} bytes @ {new IntPtr(Pointer).ToString()}";
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return Length * 397 ^ Pointer[Length - 1];
+            }
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(BlobHandle other)
@@ -81,37 +95,22 @@ namespace BlobHandles
             return obj is BlobHandle other && Equals(other);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(BlobHandle left, BlobHandle right)
         {
             return left.Length == right.Length && 
                    MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.Length) == 0;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(BlobHandle left, BlobHandle right)
         {
             return left.Length != right.Length || 
                    MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.Length) != 0;
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                return Length * 397 ^ Pointer[Length - 1];
-            }
-        }
-        
-        public override string ToString()
-        {
-            return $"{Length.ToString()} bytes @ {new IntPtr(Pointer).ToString()}";
-        }
                 
         // comparing bytes using memcmp has shown to be several times faster than any other method i've found
         [DllImport("msvcrt.dll", EntryPoint = "memcmp")]
         static extern int MemoryCompare(void* ptr1, void* ptr2, UIntPtr count);
+
     }
 }
 
