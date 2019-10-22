@@ -5,6 +5,15 @@ They allow you to do two main things:
 1) Use a sequence of bytes as a hash key, like in a `Dictionary<BlobHandle, T>`.
 2) Quickly compare two handles' slices of memory for equality
 
+## Compatibility
+
+Any release will be tested against these versions, _(italics in parentheses)_ indicates the version when written
+- Latest **LTS** -  _(2018.4.11f1)_
+- Latest **Official Release** -  _(2019.2.9f1)_
+
+Tested on these platforms:
+__Windows x64__
+
 ## Blob Strings
 This also includes _BlobString_, a wrapper around `BlobHandle` that points to an unmanaged representation of a string. 
 
