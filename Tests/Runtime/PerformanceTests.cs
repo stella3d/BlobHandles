@@ -228,21 +228,6 @@ namespace BlobHandles.Tests
             WriteLog($"Dictionary.TryGetValue() w/ BlobHandle key {bTicks}");
         }
 
-        // dictionary is populated elsewhere
-        Dictionary<BlobHandle, Action> m_Actions = new Dictionary<BlobHandle, Action>();        
-        byte[] m_Buffer = new byte[64];
-        Socket m_Socket;                                                  
-        
-        void ReceiveMethodCall()
-        {
-            var receivedByteCount = m_Socket.Receive(m_Buffer);
-            
-            // equivalent to
-            //  m_Actions.TryGetValue(new BlobHandle(m_Buffer, receivedByteCount, out Action action)
-            if (m_Actions.TryGetValueFromBytes(m_Buffer, receivedByteCount, out Action action))
-                action();
-        }
-
         public unsafe void DictionaryExtension_TryGetValueFromBytes()
         {
             var bHandles = new BlobHandle[m_Strings.Length];
