@@ -12,9 +12,29 @@ _BlobString_ is designed for use cases that involve reading strings from an unma
 
 ## Dictionaries
 
-Any `Dictionary<BlobHandle, T>` gets an extension method `TryGetValueFromBytes<T>` that allows using a segment of bytes as the key to a dictionary value search, without having to construct a `BlobHandle` yourself.
+Dictionaries keyed on _BlobHandle_ are one of the main intended uses.
 
 For dealing with strings, there is `BlobStringDictionary<T>`.  You add regular C# strings and it takes care of conversion to the unmanaged representation for you.
+
+#### TryGetValueFromBytes()
+
+`Dictionary<BlobHandle, T>` and `BlobStringDictionary<T>` both get an extension method, `TryGetValueFromBytes<T>`, that allows using a segment of bytes as the key to a dictionary value search, without having to construct a `BlobHandle` yourself.  
+```csharp
+ // dictionary is populated elsewhere
+ Dictionary<BlobHandle, Action> m_Actions = new Dictionary<BlobHandle, Action>();        
+ byte[] m_Buffer = new byte[64];
+ Socket m_Socket;                                                    
+
+ void ReceiveMethodCall()
+ {
+     var receivedByteCount = m_Socket.Receive(m_Buffer);
+
+     // equivalent to
+     //  m_Actions.TryGetValue(new BlobHandle(m_Buffer, receivedByteCount, out Action action)
+     if (m_Actions.TryGetValueFromBytes(m_Buffer, receivedByteCount, out Action action))
+         action();
+ }
+```
 
 ## Performance Details
 
