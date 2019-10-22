@@ -56,7 +56,7 @@ HashSets of _BlobHandle_ are another use, and also get their own extension metho
 
 #### ContainsBlob()
 
-`HashSet<BlobHandle>` gets a method, `ContainsBlob()`, that allows using a segment of bytes as the key to contains check, using the same pattern as the dictionary `TryGetValueFromBytes<T>` method.
+`HashSet<BlobHandle>` gets a method, `ContainsBlob()`, that allows using a segment of bytes as the key to a `.Contains()` check, using the same pattern as the dictionary `TryGetValueFromBytes<T>` method.
 ```csharp
  HashSet<BlobHandle> m_HandleSet = new HashSet<BlobHandle>();        
  byte[] m_Buffer = new byte[64];
