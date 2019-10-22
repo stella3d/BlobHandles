@@ -26,17 +26,14 @@ namespace BlobHandles
         /// </summary>
         /// <param name="self">The dictionary to look in</param>
         /// <param name="bytes">The byte array to read from</param>
-        /// <param name="length">The number of bytes to read</param>
         /// <param name="value">The output value</param>
         /// <typeparam name="T">The dictionary value type</typeparam>
         /// <returns>True if the value was found, false otherwise</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryGetValueFromBytes<T>(this Dictionary<BlobHandle, T> self, byte[] bytes, out T value)
+        public static bool TryGetValueFromBytes<T>(this Dictionary<BlobHandle, T> self, 
+            byte[] bytes, out T value)
         {
-            fixed (byte* ptr = bytes)
-            {
-                return self.TryGetValue(new BlobHandle(ptr, bytes.Length), out value);
-            }
+            return self.TryGetValue(new BlobHandle(bytes), out value);
         }
 
         /// <summary>
@@ -52,10 +49,7 @@ namespace BlobHandles
         public static bool TryGetValueFromBytes<T>(this Dictionary<BlobHandle, T> self, 
             byte[] bytes, int length, out T value)
         {
-            fixed (byte* ptr = bytes)
-            {
-                return self.TryGetValue(new BlobHandle(ptr, length), out value);
-            }
+            return self.TryGetValue(new BlobHandle(bytes, length), out value);
         }
 
         /// <summary>
@@ -73,10 +67,7 @@ namespace BlobHandles
         public static bool TryGetValueFromBytes<T>(this Dictionary<BlobHandle, T> self, 
             byte[] bytes, int length, int offset, out T value)
         {
-            fixed (byte* ptr = &bytes[offset])
-            {
-                return self.TryGetValue(new BlobHandle(ptr, length), out value);
-            }
+            return self.TryGetValue(new BlobHandle(bytes, length, offset), out value);
         }
     }
 }

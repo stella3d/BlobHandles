@@ -100,7 +100,7 @@ namespace BlobHandles
         {
             unchecked
             {
-                return Length * 397 ^ *(Pointer + Length - 1);
+                return Length * 397 ^ Pointer[Length - 1];
             }
         }
         
