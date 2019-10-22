@@ -1,7 +1,7 @@
 {
     "name": "BlobHandles.Tests.Runtime",
     "references": [
-        "GUID:19c41e5ceaa0e4b4daca3d6a88d9235d"
+        "BlobHandles.Runtime"
     ],
     "optionalUnityReferences": [],
     "includePlatforms": [
