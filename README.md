@@ -8,7 +8,6 @@ They allow you to do two main things:
 ## Blob Strings
 This also includes _BlobString_, a wrapper around `BlobHandle` that points to an unmanaged representation of a string. 
 
-_BlobString_ is designed for use cases that involve reading strings from an unmanaged source (network / disk) & comparing them against some sort of hash set.  It was written to power an [OSC parser](https://github.com/stella3d/OscCore).
-
+_BlobString_ is designed for use cases that involve reading strings from an unmanaged source (network / disk) & comparing them against some sort of hash set.  
 
 
