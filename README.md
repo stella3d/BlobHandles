@@ -17,11 +17,11 @@ It's recommended to pick an encoding on startup and not change it after you've e
 
 Dictionaries keyed on _BlobHandle_ are one of the main intended uses.
 
-For dealing with strings, there is `BlobStringDictionary<T>`.  You add regular C# strings and it takes care of conversion to the unmanaged representation for you.
+For dealing with strings, there is `BlobStringDictionary<T>`.  You add regular strings and it takes care of conversion to the unmanaged representation for you.
 
 #### TryGetValueFromBytes()
 
-`Dictionary<BlobHandle, T>` and `BlobStringDictionary<T>` both have a method, `TryGetValueFromBytes<T>`, that allows using a segment of bytes as the key to a dictionary value search, without having to construct a `BlobHandle` yourself.  
+`Dictionary<BlobHandle, T>` and `BlobStringDictionary<T>` both have a method, `TryGetValueFromBytes<T>`, that allows using a segment of bytes as the key to a dictionary value search, without having to construct a blob handle yourself.  
 ```csharp
  // dictionary is populated elsewhere
  Dictionary<BlobHandle, Action> m_Actions = new Dictionary<BlobHandle, Action>();        
@@ -41,6 +41,29 @@ For dealing with strings, there is `BlobStringDictionary<T>`.  You add regular C
 
 There are a number of other [TryGetValueFromBytes() overloads](Runtime/Dictionary/BlobHandleDictionaryMethods.cs) for using with offsets into arrays and pointers .
 
+## HashSets
+
+HashSets of _BlobHandle_ are another use, and also get their own extension method.
+
+#### ContainsBlob()
+
+`HashSet<BlobHandle>` gets a method, `ContainsBlob()`, that allows using a segment of bytes as the key to contains check, using the same pattern as the dictionary `TryGetValueFromBytes<T>` method.
+```csharp
+ HashSet<BlobHandle> m_HandleSet = new HashSet<BlobHandle>();        
+ byte[] m_Buffer = new byte[64];
+ Socket m_Socket;                                                    
+
+ void ReceiveMethodCall()
+ {
+     var receivedByteCount = m_Socket.Receive(m_Buffer);
+     if (m_HandleSet.ContainsBlob(m_Buffer, receivedByteCount))
+     {
+         // do something in response to matching
+     }
+ }
+```
+
+There are the same [overloads for ContainsBlob()](Runtime/Dictionary/BlobHandleHashSet.ContainsBlob.cs) as the dictionary method.
 
 ## Performance Details
 
