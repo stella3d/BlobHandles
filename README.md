@@ -76,6 +76,12 @@ There are the same [overloads for ContainsBlob()](Runtime/Dictionary/BlobHandleH
 
 ## Performance Details
 
+###### Runtimes
+
+`BlobHandle` is significantly faster under Mono than IL2CPP in my testing on Windows x64, 2019.1.14.  
+
+However, it still performs fine under IL2CPP.  
+
 ###### Memory & Constructors
 `BlobHandle` is an immutable struct with only a pointer & a length.  This means
 - fast to create
@@ -102,6 +108,10 @@ The included method for getting a blob handle's hash code uses the length of the
 This was the fastest method I tested on my data, and it should work well on any data that doesn't have a lot of entries of the same length that _also_ end in the same byte.  
 
 You may be able to get better performance with a different method, especially if your data is different.
+
+###### IL2CPP Options
+An [attribute](https://docs.unity3d.com/Manual/IL2CPP-CompilerOptions.html) is used to disable IL2CPP null checks in some methods of `BlobStringDictionary<T>`.  
+The only managed objects inside those methods are _readonly_ members of the class, and initialized when the dictionary is, so they should always not be null.
 
 ###### Tests
 Performance tests for BlobHandles include, but are not limited to:
