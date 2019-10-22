@@ -10,6 +10,9 @@ This also includes _BlobString_, a wrapper around `BlobHandle` that points to an
 
 _BlobString_ is designed for use cases that involve reading strings from an unmanaged source (network / disk) & comparing them against some sort of hash set.  
 
+Set the `BlobString.Encoding` property to change the encoding used for strings.  
+It's recommended to pick an encoding on startup and not change it after you've encoded at least 1 string. 
+
 ## Dictionaries
 
 Dictionaries keyed on _BlobHandle_ are one of the main intended uses.
