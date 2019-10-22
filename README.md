@@ -18,7 +18,7 @@ For dealing with strings, there is `BlobStringDictionary<T>`.  You add regular C
 
 #### TryGetValueFromBytes()
 
-`Dictionary<BlobHandle, T>` and `BlobStringDictionary<T>` both get an extension method, `TryGetValueFromBytes<T>`, that allows using a segment of bytes as the key to a dictionary value search, without having to construct a `BlobHandle` yourself.  
+`Dictionary<BlobHandle, T>` and `BlobStringDictionary<T>` both have a method, `TryGetValueFromBytes<T>`, that allows using a segment of bytes as the key to a dictionary value search, without having to construct a `BlobHandle` yourself.  
 ```csharp
  // dictionary is populated elsewhere
  Dictionary<BlobHandle, Action> m_Actions = new Dictionary<BlobHandle, Action>();        
