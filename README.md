@@ -43,6 +43,14 @@ For dealing with strings, there is `BlobStringDictionary<T>`.  You add regular C
 - fast to create
 - uses little memory, no heap
 
+`BlobString` uses a `NativeArray` to store a copy of the string.  This means
+
+- Doesn't add objects to the managed heap.  
+  This matters because garbage collection performance [degrades as the managed heap expands](https://docs.unity3d.com/Manual/BestPracticeUnderstandingPerformanceInUnity4-1.html).
+
+- Takes some extra amount of memory to hold encoded string copies, but an amount easily spared in most cases.
+  The original strings could even be set to null and garbage collected if you are highly memory constrained.
+
 ###### Equality Testing
 I tested a number of different ways of testing memory equality between handles to find out what method would be faster, and how that changed depending on the number of bytes to compare & the compiler (Mono or IL2CPP) used. 
 
