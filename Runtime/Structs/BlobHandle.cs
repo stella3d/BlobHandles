@@ -6,7 +6,7 @@ namespace BlobHandles
 {
     /// <summary>
     /// Wraps an arbitrary chunk of bytes in memory, so it can be used as a hash key
-    /// and compared against other instances of the same set of bytes 
+    /// and compared against other instances of the same set of bytes.
     /// </summary>
     public unsafe struct BlobHandle : IEquatable<BlobHandle>
     {
@@ -14,7 +14,7 @@ namespace BlobHandles
         public readonly byte* Pointer;
         /// <summary>The number of bytes in the blob</summary>
         public readonly int Length;
-
+        
         public BlobHandle(byte* pointer, int length)
         {
             Pointer = pointer;

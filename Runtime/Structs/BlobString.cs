@@ -24,27 +24,17 @@ namespace BlobHandles
 
         public int Length => Bytes.Length;
         
-        public unsafe BlobString(string source, bool alignTo4Bytes = false, Allocator allocator = Allocator.Persistent)
+        public unsafe BlobString(string source, Allocator allocator = Allocator.Persistent)
         {
             var byteCount = Encoding.GetByteCount(source);
-            var alignedByteCount = byteCount;
-            if (alignTo4Bytes)
-                alignedByteCount = (byteCount + 3) & ~3;
-            
-            Bytes = new NativeArray<byte>(alignedByteCount, allocator);
+            Bytes = new NativeArray<byte>(byteCount, allocator);
             var nativeBytesPtr = (byte*) Bytes.GetUnsafePtr();
             
             // write encoded string bytes directly to unmanaged memory
             fixed (char* strPtr = source)
             {
                 Encoding.GetBytes(strPtr, source.Length, nativeBytesPtr, byteCount);
-                Handle = new BlobHandle(nativeBytesPtr, alignedByteCount);
-            }
-
-            if (alignTo4Bytes)
-            {
-                for (int i = byteCount; i < Bytes.Length; i++)
-                    Bytes[i] = 0;
+                Handle = new BlobHandle(nativeBytesPtr, byteCount);
             }
         }
         
