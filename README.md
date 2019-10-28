@@ -11,8 +11,7 @@ Any release will be tested against these versions, _(italics in parentheses)_ in
 - Latest **LTS** -  _(2018.4.11f1)_
 - Latest **Official Release** -  _(2019.2.9f1)_
 
-Tested on these platforms:
-__Windows x64__
+Primarily tested on windows, but should work on any platform that lets you use pointers.
 
 ## Blob Strings
 This also includes _BlobString_, a wrapper around `BlobHandle` that points to an unmanaged representation of a string. 
