@@ -3,7 +3,9 @@
     "references": [],
     "optionalUnityReferences": [],
     "includePlatforms": [
+        "Android",
         "Editor",
+        "iOS",
         "LinuxStandalone64",
         "macOSStandalone",
         "WindowsStandalone64"
@@ -12,7 +14,6 @@
     "allowUnsafeCode": true,
     "overrideReferences": false,
     "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": []
+    "autoReferenced": false,
+    "defineConstraints": []
 }
