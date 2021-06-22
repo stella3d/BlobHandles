@@ -107,9 +107,25 @@ namespace BlobHandles
                    MemoryCompare(left.Pointer, right.Pointer, (UIntPtr) left.Length) != 0;
         }
                 
+#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
         // comparing bytes using memcmp has shown to be several times faster than any other method i've found
         [DllImport("msvcrt.dll", EntryPoint = "memcmp")]
         static extern int MemoryCompare(void* ptr1, void* ptr2, UIntPtr count);
+#else
+        static int MemoryCompare(void* ptr1, void* ptr2, UIntPtr count)
+        {
+            var p1 = new Span<byte>(ptr1, (int) count);
+            var p2 = new Span<byte>(ptr2, (int) count);
+            for (int i = 0; i < p1.Length; i++)
+            {
+                if (p1[i] != p2[i])
+                {
+                    return 1;
+                }
+            }
+            return 0;
+        }
+#endif
 
     }
 }
